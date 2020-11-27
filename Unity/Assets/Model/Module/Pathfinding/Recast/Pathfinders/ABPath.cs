@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Basic path, finds the shortest path from A to B.
 	 * \ingroup paths
 	 * This is the most basic path object it will try to find the shortest path between two points.\n
@@ -78,14 +78,15 @@ namespace PF {
 		 *
 		 * \returns The constructed path object
 		 */
-		public static ABPath Construct (Vector3 start, Vector3 end, OnPathDelegate callback = null) {
+		public static ABPath Construct (NavmeshData navmeshData, Vector3 start, Vector3 end, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<ABPath>();
 
-			p.Setup(start, end, callback);
+			p.Setup(navmeshData, start, end, callback);
 			return p;
 		}
 
-		protected void Setup (Vector3 start, Vector3 end, OnPathDelegate callbackDelegate) {
+		protected void Setup (NavmeshData navmeshData, Vector3 start, Vector3 end, OnPathDelegate callbackDelegate) {
+            this.navmeshData = navmeshData;
 			callback = callbackDelegate;
 			UpdateStartEnd(start, end);
 		}
@@ -157,7 +158,7 @@ namespace PF {
 
 			//Initialize the NNConstraint
 			nnConstraint.tags = enabledTags;
-			var startNNInfo  = PathFindHelper.GetNearest(startPoint, nnConstraint);
+			var startNNInfo  = navmeshData.GetNearestOnWalkableNavmesh(startPoint, nnConstraint);
 
 			//Tell the NNConstraint which node was found as the start node if it is a PathNNConstraint and not a normal NNConstraint
 			var pathNNConstraint = nnConstraint as PathNNConstraint;
@@ -183,7 +184,7 @@ namespace PF {
 			// If it is declared that this path type has an end point
 			// Some path types might want to use most of the ABPath code, but will not have an explicit end point at this stage
 			if (hasEndPoint) {
-				var endNNInfo = PathFindHelper.GetNearest(endPoint, nnConstraint);
+				var endNNInfo = navmeshData.GetNearestOnWalkableNavmesh(endPoint, nnConstraint);
 				endPoint = endNNInfo.position;
 				endNode = endNNInfo.node;
 
@@ -378,7 +379,7 @@ namespace PF {
 
 		/** Returns a debug string for this path.
 		 */
-		internal override string DebugString (PathLog logMode) {
+		public override string DebugString (PathLog logMode) {
 			if (logMode == PathLog.None || (!error && logMode == PathLog.OnlyErrors)) {
 				return "";
 			}

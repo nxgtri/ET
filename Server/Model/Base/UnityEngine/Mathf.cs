@@ -1,6 +1,6 @@
 using System;
 
-namespace UnityEngine
+namespace ETPathfinder.UnityEngine
 {
     public static class Mathf
     {

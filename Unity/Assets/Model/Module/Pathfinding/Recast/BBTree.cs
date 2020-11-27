@@ -1,9 +1,9 @@
 //#define ASTARDEBUG   //"BBTree Debug" If enables, some queries to the tree will show debug lines. Turn off multithreading when using this since DrawLine calls cannot be called from a different thread
 
 using System;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 
 	/** Axis Aligned Bounding Box Tree.
 	 * Holds a bounding box tree of triangles.
@@ -212,22 +212,6 @@ namespace PF {
 
 			return rect;
 		}
-#if !SERVER
-		[System.Diagnostics.Conditional("ASTARDEBUG")]
-		static void DrawDebugRect (IntRect rect) {
-			UnityEngine.Debug.DrawLine(new Vector3(rect.xmin, 0, rect.ymin), new Vector3(rect.xmax, 0, rect.ymin), UnityEngine.Color.white);
-			UnityEngine.Debug.DrawLine(new Vector3(rect.xmin, 0, rect.ymax), new Vector3(rect.xmax, 0, rect.ymax), UnityEngine.Color.white);
-			UnityEngine.Debug.DrawLine(new Vector3(rect.xmin, 0, rect.ymin), new Vector3(rect.xmin, 0, rect.ymax), UnityEngine.Color.white);
-			UnityEngine.Debug.DrawLine(new Vector3(rect.xmax, 0, rect.ymin), new Vector3(rect.xmax, 0, rect.ymax), UnityEngine.Color.white);
-		}
-
-		[System.Diagnostics.Conditional("ASTARDEBUG")]
-		static void DrawDebugNode (TriangleMeshNode node, float yoffset, UnityEngine.Color color) {
-			UnityEngine.Debug.DrawLine(((Vector3)node.GetVertex(1) + Vector3.up*yoffset), ((Vector3)node.GetVertex(2) + Vector3.up*yoffset), color);
-			UnityEngine.Debug.DrawLine(((Vector3)node.GetVertex(0) + Vector3.up*yoffset), ((Vector3)node.GetVertex(1) + Vector3.up*yoffset), color);
-			UnityEngine.Debug.DrawLine(((Vector3)node.GetVertex(2) + Vector3.up*yoffset), ((Vector3)node.GetVertex(0) + Vector3.up*yoffset), color);
-		}
-#endif
 
 		/** Queries the tree for the closest node to \a p constrained by the NNConstraint.
 		 * Note that this function will only fill in the constrained node.
@@ -275,9 +259,9 @@ namespace PF {
 				for (int i = 0; i < MaximumLeafSize && nodes[box.nodeOffset+i] != null; i++) {
 					var node = nodes[box.nodeOffset+i];
 					// Update the NNInfo
-#if !SERVER
-					DrawDebugNode(node, 0.2f, UnityEngine.Color.red);
-#endif
+
+					//DrawDebugNode(node, 0.2f, UnityEngine.Color.red);
+
 
 					if (constraint == null || constraint.Suitable(node)) {
 						Vector3 closest = node.ClosestPointOnNodeXZ(p);
@@ -296,9 +280,9 @@ namespace PF {
 					}
 				}
 			} else {
-#if !SERVER
-				DrawDebugRect(box.rect);
-#endif
+
+				//DrawDebugRect(box.rect);
+
 
 				int first = box.left, second = box.right;
 				float firstDist, secondDist;
@@ -350,9 +334,9 @@ namespace PF {
 					Vector3 closest = node.ClosestPointOnNode(p);
 					float dist = (closest-p).sqrMagnitude;
 					if (dist < closestSqrDist) {
-#if !SERVER
-						DrawDebugNode(node, 0.2f, UnityEngine.Color.red);
-#endif
+
+						//DrawDebugNode(node, 0.2f, UnityEngine.Color.red);
+
 
 						if (constraint == null || constraint.Suitable(node)) {
 							// Update the NNInfo
@@ -361,15 +345,15 @@ namespace PF {
 							closestSqrDist = dist;
 						}
 					} else {
-#if !SERVER
-						DrawDebugNode(node, 0.0f, UnityEngine.Color.blue);
-#endif
+
+						//DrawDebugNode(node, 0.0f, UnityEngine.Color.blue);
+
 					}
 				}
 			} else {
-#if !SERVER
-				DrawDebugRect(box.rect);
-#endif
+
+				//DrawDebugRect(box.rect);
+
 				int first = box.left, second = box.right;
 				float firstDist, secondDist;
 				GetOrderedChildren(ref first, ref second, out firstDist, out secondDist, p);
@@ -419,23 +403,23 @@ namespace PF {
 				for (int i = 0; i < MaximumLeafSize && nodes[box.nodeOffset+i] != null; i++) {
 					var node = nodes[box.nodeOffset+i];
 					if (node.ContainsPoint((Int3)p)) {
-#if !SERVER
-						DrawDebugNode(node, 0.2f, UnityEngine.Color.red);
-#endif
+
+						//DrawDebugNode(node, 0.2f, UnityEngine.Color.red);
+
 
 						if (constraint == null || constraint.Suitable(node)) {
 							return node;
 						}
 					} else {
-#if !SERVER
-						DrawDebugNode(node, 0.0f, UnityEngine.Color.blue);
-#endif
+
+						//DrawDebugNode(node, 0.0f, UnityEngine.Color.blue);
+
 					}
 				}
 			} else {
-#if !SERVER
-				DrawDebugRect(box.rect);
-#endif
+
+				//DrawDebugRect(box.rect);
+
 
 				//Search children
 				if (tree[box.left].Contains(p)) {
@@ -451,6 +435,95 @@ namespace PF {
 
 			return null;
 		}
+
+        public bool MM_Linecast(Int3 start, Int3 end)
+        {
+            return 0 < count && MM_TestLineRectIntersection(start, end, tree[0].rect) && MM_LinecastInternal(0, start, end);
+        }
+
+        static bool MM_TestLineRectIntersection(Int3 lineStart, Int3 lineEnd, IntRect rect)
+        {
+            if (rect.Contains(lineStart.x, lineStart.z) || rect.Contains(lineEnd.x, lineEnd.z))
+            {
+                return true;
+            }
+
+            Int3 rectPoint0 = new Int3(rect.xmin, 0, rect.ymin);
+            Int3 rectPoint1 = new Int3(rect.xmax, 0, rect.ymin);
+            Int3 rectPoint2 = new Int3(rect.xmax, 0, rect.ymax);
+            Int3 rectPoint3 = new Int3(rect.xmin, 0, rect.ymax);
+
+            if (VectorMath.SegmentsIntersectXZ(rectPoint0, rectPoint1, lineStart, lineEnd))
+            {
+                return true;
+            }
+            if (VectorMath.SegmentsIntersectXZ(rectPoint1, rectPoint2, lineStart, lineEnd))
+            {
+                return true;
+            }
+            if (VectorMath.SegmentsIntersectXZ(rectPoint2, rectPoint3, lineStart, lineEnd))
+            {
+                return true;
+            }
+            if (VectorMath.SegmentsIntersectXZ(rectPoint3, rectPoint0, lineStart, lineEnd))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        bool MM_LinecastInternal(int boxi, Int3 start, Int3 end)
+        {
+            BBTreeBox box = tree[boxi];
+
+            if (box.IsLeaf)
+            {
+                var nodes = nodeLookup;
+                for (int i = 0; i < MaximumLeafSize && nodes[box.nodeOffset + i] != null; i++)
+                {
+                    var node = nodes[box.nodeOffset + i];
+
+                    Int3 a0, a1, a2;
+                    node.GetVertices(out a0, out a1, out a2);
+
+                    if (VectorMath.SegmentsIntersectXZ(a0, a1, start, end))
+                    {
+                        return true;
+                    }
+
+                    if (VectorMath.SegmentsIntersectXZ(a1, a2, start, end))
+                    {
+                        return true;
+                    }
+
+                    if (VectorMath.SegmentsIntersectXZ(a2, a0, start, end))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                if (MM_TestLineRectIntersection(start, end, tree[box.left].rect))
+                {
+                    if (MM_LinecastInternal(box.left, start, end))
+                    {
+                        return true;
+                    }
+                }
+
+                if (MM_TestLineRectIntersection(start, end, tree[box.right].rect))
+                {
+                    if (MM_LinecastInternal(box.right, start, end))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
 		struct BBTreeBox {
 			public IntRect rect;

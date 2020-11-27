@@ -2,9 +2,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	
 	#region Enums
 
@@ -148,6 +148,7 @@ namespace PF {
 			}
 		}
 #endif
+        protected NavmeshData navmeshData;
 
 		/** Data for the thread calculating this path */
 		protected PathHandler pathHandler;
@@ -165,7 +166,7 @@ namespace PF {
 		public OnPathDelegate immediateCallback;
 
 		/** Returns the state of the path in the pathfinding pipeline */
-		internal PathState PipelineState { get; private set; }
+		public PathState PipelineState { get; private set; }
 		System.Object stateLock = new object ();
 
 		/** Provides additional traversal information to a path request.
@@ -378,14 +379,14 @@ namespace PF {
 				// for each case saves an extra jump.
 				// This code is pretty hot
 				if (hTargetNode != null) {
-					h = System.Math.Max(h, PathFindHelper.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
+					h = System.Math.Max(h, navmeshData.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
 				}
 				return h;
 			case Heuristic.Manhattan:
 				Int3 p2 = node.position;
 				h = (uint)((System.Math.Abs(hTarget.x-p2.x) + System.Math.Abs(hTarget.y-p2.y) + System.Math.Abs(hTarget.z-p2.z))*heuristicScale);
 				if (hTargetNode != null) {
-					h = System.Math.Max(h, PathFindHelper.GetConfig().euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
+					h = System.Math.Max(h, navmeshData.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
 				}
 				return h;
 			case Heuristic.DiagonalManhattan:
@@ -397,11 +398,12 @@ namespace PF {
 				int diag2 = System.Math.Max(p.x, p.z);
 				h = (uint)((((14*diag)/10) + (diag2-diag) + p.y) * heuristicScale);
 				if (hTargetNode != null) {
-					h = System.Math.Max(h, PathFindHelper.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
+					h = System.Math.Max(h, navmeshData.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
 				}
 				return h;
-			}
-			return 0U;
+			case Heuristic.None: break;
+            }
+            return 0U;
 		}
 
 		/** Returns penalty for the given tag.
@@ -490,7 +492,7 @@ namespace PF {
 		}
 
 		/** Causes the path to fail and sets #errorLog to \a msg */
-		internal void FailWithError (string msg) {
+		public void FailWithError (string msg) {
 			Error();
 			if (errorLog != "") errorLog += "\n" + msg;
 			else errorLog = msg;
@@ -500,7 +502,7 @@ namespace PF {
 		 * \deprecated Use #FailWithError instead
 		 */
 		[System.Obsolete("Use FailWithError instead")]
-		internal void LogError (string msg) {
+        public void LogError (string msg) {
 			Log(msg);
 		}
 
@@ -512,7 +514,7 @@ namespace PF {
 		 * \deprecated Use #FailWithError instead
 		 */
 		[System.Obsolete("Use FailWithError instead")]
-		internal void Log (string msg) {
+        public void Log (string msg) {
 			errorLog += msg;
 		}
 
@@ -710,9 +712,7 @@ namespace PF {
 				c = c.parent;
 				count++;
 				if (count > 2048) {
-#if !SERVER
-					UnityEngine.Debug.LogWarning("Infinite loop? >2048 node path. Remove this message if you really have that long paths (Path.cs, Trace method)");
-#endif
+					//UnityEngine.Debug.LogWarning("Infinite loop? >2048 node path. Remove this message if you really have that long paths (Path.cs, Trace method)");
 					break;
 				}
 			}
@@ -782,7 +782,7 @@ namespace PF {
 		 * An empty string is returned if logMode == None
 		 * or logMode == OnlyErrors and this path did not fail.
 		 */
-		internal virtual string DebugString (PathLog logMode) {
+		public virtual string DebugString (PathLog logMode) {
 			if (logMode == PathLog.None || (!error && logMode == PathLog.OnlyErrors)) {
 				return "";
 			}
@@ -863,7 +863,7 @@ namespace PF {
 	}
 
 	/** Used for hiding internal methods of the Path class */
-	internal interface IPathInternals {
+	public interface IPathInternals {
 		PathHandler PathHandler { get; }
 		bool Pooled { get; set; }
 		void AdvanceState (PathState s);

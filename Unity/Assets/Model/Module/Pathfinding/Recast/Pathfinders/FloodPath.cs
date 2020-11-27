@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Floods the area completely for easy computation of any path to a single point.
 	 * This path is a bit special, because it does not do anything useful by itself. What it does is that it calculates paths to all nodes it can reach, it floods the graph.
 	 * This data will remain stored in the path. Then you can call a FloodPathTracer path, that path will trace the path from it's starting point all the way to where this path started flooding and thus generating a path extremely quickly.\n
@@ -76,29 +76,30 @@ namespace PF {
 		 */
 		public FloodPath () {}
 
-		public static FloodPath Construct (Vector3 start, OnPathDelegate callback = null) {
+		public static FloodPath Construct (NavmeshData navmeshData, Vector3 start, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<FloodPath>();
-
-			p.Setup(start, callback);
+			p.Setup(navmeshData, start, callback);
 			return p;
 		}
 
-		public static FloodPath Construct (GraphNode start, OnPathDelegate callback = null) {
+		public static FloodPath Construct (NavmeshData navmeshData, GraphNode start, OnPathDelegate callback = null) {
 			if (start == null) throw new ArgumentNullException("start");
 
 			var p = PathPool.GetPath<FloodPath>();
-			p.Setup(start, callback);
+			p.Setup(navmeshData, start, callback);
 			return p;
 		}
 
-		protected void Setup (Vector3 start, OnPathDelegate callback) {
+		protected void Setup (NavmeshData navmeshData, Vector3 start, OnPathDelegate callback) {
+			this.navmeshData = navmeshData;
 			this.callback = callback;
 			originalStartPoint = start;
 			startPoint = start;
 			heuristic = Heuristic.None;
 		}
 
-		protected void Setup (GraphNode start, OnPathDelegate callback) {
+		protected void Setup (NavmeshData navmeshData, GraphNode start, OnPathDelegate callback) {
+			this.navmeshData = navmeshData;
 			this.callback = callback;
 			originalStartPoint = (Vector3)start.position;
 			startNode = start;
@@ -121,7 +122,7 @@ namespace PF {
 			if (startNode == null) {
 				//Initialize the NNConstraint
 				nnConstraint.tags = enabledTags;
-				var startNNInfo  = PathFindHelper.GetNearest(originalStartPoint, nnConstraint);
+				var startNNInfo  = navmeshData.GetNearestOnWalkableNavmesh(originalStartPoint, nnConstraint);
 
 				startPoint = startNNInfo.position;
 				startNode = startNNInfo.node;

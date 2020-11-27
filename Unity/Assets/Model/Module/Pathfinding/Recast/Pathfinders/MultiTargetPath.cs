@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** A path which searches from one point to a number of different targets in one search or from a number of different start points to a single target.
 	 *
 	 * This is faster than searching with an ABPath for each target if pathsForAll is true.
@@ -89,21 +89,22 @@ namespace PF {
 		 */
 		public MultiTargetPath () {}
 
-		public static MultiTargetPath Construct (Vector3[] startPoints, Vector3 target, OnPathDelegate[] callbackDelegates, OnPathDelegate callback = null) {
-			MultiTargetPath p = Construct(target, startPoints, callbackDelegates, callback);
+		public static MultiTargetPath Construct (NavmeshData navmeshData, Vector3[] startPoints, Vector3 target, OnPathDelegate[] callbackDelegates, OnPathDelegate callback = null) {
+			MultiTargetPath p = Construct(navmeshData, target, startPoints, callbackDelegates, callback);
 
 			p.inverted = true;
 			return p;
 		}
 
-		public static MultiTargetPath Construct (Vector3 start, Vector3[] targets, OnPathDelegate[] callbackDelegates, OnPathDelegate callback = null) {
+		public static MultiTargetPath Construct (NavmeshData navmeshData, Vector3 start, Vector3[] targets, OnPathDelegate[] callbackDelegates, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<MultiTargetPath>();
 
-			p.Setup(start, targets, callbackDelegates, callback);
+			p.Setup(navmeshData, start, targets, callbackDelegates, callback);
 			return p;
 		}
 
-		protected void Setup (Vector3 start, Vector3[] targets, OnPathDelegate[] callbackDelegates, OnPathDelegate callback) {
+		protected void Setup (NavmeshData navmeshData, Vector3 start, Vector3[] targets, OnPathDelegate[] callbackDelegates, OnPathDelegate callback) {
+            this.navmeshData = navmeshData;
 			inverted = false;
 			this.callback = callback;
 			callbacks = callbackDelegates;
@@ -299,7 +300,7 @@ namespace PF {
 
 		protected override void Prepare () {
 			nnConstraint.tags = enabledTags;
-			var startNNInfo  = PathFindHelper.GetNearest(startPoint, nnConstraint);
+			var startNNInfo  = navmeshData.GetNearestOnWalkableNavmesh(startPoint, nnConstraint);
 			startNode = startNNInfo.node;
 
 			if (startNode == null) {
@@ -329,7 +330,7 @@ namespace PF {
 			bool anyNotNull = false;
 
 			for (int i = 0; i < targetPoints.Length; i++) {
-				var endNNInfo = PathFindHelper.GetNearest(targetPoints[i], nnConstraint);
+				var endNNInfo = navmeshData.GetNearestOnWalkableNavmesh(targetPoints[i], nnConstraint);
 
 				targetNodes[i] = endNNInfo.node;
 
@@ -628,7 +629,7 @@ namespace PF {
 			}
 		}
 
-		internal override string DebugString (PathLog logMode) {
+		public override string DebugString (PathLog logMode) {
 			if (logMode == PathLog.None || (!error && logMode == PathLog.OnlyErrors)) {
 				return "";
 			}

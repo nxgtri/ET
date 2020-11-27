@@ -1,5 +1,5 @@
 using System;
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Calculates checksums of byte arrays */
 	public class Checksum {
 		// The CRC value table

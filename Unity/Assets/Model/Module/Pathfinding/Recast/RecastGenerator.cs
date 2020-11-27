@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF
+{
 
-	/** Automatically generates navmesh graphs based on world geometry.
+    /** Automatically generates navmesh graphs based on world geometry.
 	 * The recast graph is based on Recast (http://code.google.com/p/recastnavigation/).\n
 	 * I have translated a good portion of it to C# to run it natively in Unity.
 	 *
@@ -47,7 +49,7 @@ namespace PF {
 	 *
 	 * \astarpro
 	 */
-	[JsonOptIn]
+    [JsonOptIn]
 	public class RecastGraph : NavmeshBase {
 		[JsonMember]
 		/** Radius of the agent which will traverse the navmesh.
@@ -128,6 +130,17 @@ namespace PF {
 		 */
 		[JsonMember]
 		public float minRegionSize = 3;
+
+        public Bounds GetTileBounds(int x, int z, int width = 1, int depth = 1)
+        {
+            var b = new Bounds();
+            var forcedBounds = new Bounds(forcedBoundsCenter, forcedBoundsSize);
+            b.SetMinMax(
+                new Vector3(x * tileSizeX * cellSize, 0, z * tileSizeZ * cellSize) +  forcedBounds.min,
+                new Vector3((x + width) * tileSizeX * cellSize, forcedBounds.size.y, (z + depth) * tileSizeZ * cellSize) + forcedBounds.min
+                );
+            return b;
+        }
 
 		/** Size in voxels of a single tile.
 		 * This is the width of the tile.
@@ -320,6 +333,14 @@ namespace PF {
 		[JsonMember]
 		public Vector3 forcedBoundsCenter;
 
+        public Bounds forcedBounds
+        {
+            get
+            {
+                return new Bounds(forcedBoundsCenter, forcedBoundsSize);
+            }
+        }
+
 		public const int BorderVertexMask = 1;
 		public const int BorderVertexOffset = 31;
 
@@ -453,5 +474,229 @@ namespace PF {
 
 			showMeshSurface = ctx.reader.ReadBoolean();
 		}
+
+        public NavmeshTile ReplaceTile(int x, int z, Int3[] verts, int[] tris, bool worldSpace)
+        {
+            return ReplaceTile(x, z, 1, 1, verts, tris, worldSpace);
+        }
+
+        public NavmeshTile ReplaceTile(int x, int z, int w, int d, Int3[] verts, int[] tris, bool worldSpace)
+        {
+            if (x + w > tileXCount || z + d > tileZCount || x < 0 || z < 0)
+            {
+                throw new System.ArgumentException("Tile is placed at an out of bounds position or extends out of the graph bounds (" + x + ", " + z + " [" + w + ", " + d + "] " + tileXCount + " " + tileZCount + ")");
+            }
+
+            if (w < 1 || d < 1)
+                throw new System.ArgumentException("width and depth must be greater or equal to 1. Was " + w + ", " + d);
+
+            //Remove previous tiles
+            for (int cz = z; cz < z + d; cz++)
+            {
+                for (int cx = x; cx < x + w; cx++)
+                {
+                    NavmeshTile otile = tiles[cx + cz * tileXCount];
+                    if (otile == null)
+                        continue;
+
+                    //Remove old tile connections
+                    RemoveConnectionsFromTile(otile);
+
+                    for (int i = 0; i < otile.nodes.Length; i++)
+                    {
+                        var node = otile.nodes[i];
+                        OnDestroyNode?.Invoke(node);
+                    }
+
+                    for (int qz = otile.z; qz < otile.z + otile.d; qz++)
+                    {
+                        for (int qx = otile.x; qx < otile.x + otile.w; qx++)
+                        {
+                            NavmeshTile qtile = tiles[qx + qz * tileXCount];
+                            if (qtile == null || qtile != otile)
+                                throw new System.Exception("This should not happen");
+
+                            if (qz < z || qz >= z + d || qx < x || qx >= x + w)
+                            {
+                                //if out of this tile's bounds, replace with empty tile
+                                tiles[qx + qz * tileXCount] = NewEmptyTile(qx, qz);
+                            }
+                            else
+                            {
+                                //Will be replaced by the new tile
+                                tiles[qx + qz * tileXCount] = null;
+                            }
+                        }
+                    }
+                }
+            }
+
+            //Create a new navmesh tile and assign its settings
+            var tile = new NavmeshTile();
+            tile.x = x;
+            tile.z = z;
+            tile.tris = tris;
+            tile.verts = verts;
+            tile.graph = this;
+            tile.bbTree = new BBTree();
+
+            if (tile.tris.Length % 3 != 0)
+                throw new System.ArgumentException("Triangle array's length must be a multiple of 3 (tris)");
+
+            if (tile.verts.Length > 0xFFFF)
+                throw new System.ArgumentException("Too many vertices per tile (more than 65535)");
+
+            if (!worldSpace)
+            {
+                // Due to warning spam, commented out Logging.Warning lines.
+                if (!Mathf.CompareApproximate(x * tileSizeX * cellSize * Int3.FloatPrecision, (float)Math.Round(x * tileSizeX * cellSize * Int3.FloatPrecision)))
+                {
+                    //Log.Warn("Possible numerical imprecision. Consider adjusting tileSize and/or cellSize");
+                }
+                if (!Mathf.CompareApproximate(z * tileSizeZ * cellSize * Int3.FloatPrecision, (float)Math.Round(z * tileSizeZ * cellSize * Int3.FloatPrecision)))
+                {
+                    //Log.Warn("Possible numerical imprecision. Consider adjusting tileSize and/or cellSize");
+                }
+
+                var offset = (Int3)(new Vector3((x * tileSizeX * cellSize), 0, (z * tileSizeZ * cellSize)) + forcedBounds.min);
+
+                for (int i = 0; i < verts.Length; i++)
+                {
+                    verts[i] += offset;
+                }
+            }
+
+            var nodes = new TriangleMeshNode[tile.tris.Length / 3];
+            tile.nodes = nodes;
+
+            //This index will be ORed to the triangle indices
+            int tileIndex = x + z * tileXCount;
+            tileIndex <<= TileIndexOffset;
+
+            //Create nodes and assign triangle indices
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                var node = new TriangleMeshNode(tile);
+                nodes[i] = node;
+                node.GraphIndex = (uint)graphIndex;
+                node.v0 = tile.tris[i * 3 + 0] | tileIndex;
+                node.v1 = tile.tris[i * 3 + 1] | tileIndex;
+                node.v2 = tile.tris[i * 3 + 2] | tileIndex;
+                if(GetNewNodeIndex != null)
+                {
+                    node.SetPathNodeIndex(GetNewNodeIndex());
+                }
+
+                //Degenerate triangles might occur, but they will not cause any large troubles anymore
+                //if (Polygon.IsColinear (node.GetVertex(0), node.GetVertex(1), node.GetVertex(2))) {
+                //	Debug.Log ("COLINEAR!!!!!!");
+                //}
+
+                //Make sure the triangle is clockwise
+                if (!VectorMath.IsClockwiseXZ(node.GetVertex(0), node.GetVertex(1), node.GetVertex(2)))
+                {
+                    int tmp = node.v0;
+                    node.v0 = node.v2;
+                    node.v2 = tmp;
+                }
+
+                node.Walkable = true;
+                node.Penalty = initialPenalty;
+                node.UpdatePositionFromVertices();
+            }
+
+            tile.bbTree.RebuildFrom(nodes);
+
+            CreateNodeConnections(tile.nodes);
+
+            //Set tile
+            for (int cz = z; cz < z + d; cz++)
+            {
+                for (int cx = x; cx < x + w; cx++)
+                {
+                    tiles[cx + cz * tileXCount] = tile;
+                }
+            }
+
+            tile.vertsInGraphSpace = new Int3[tile.verts.Length];
+            tile.verts.CopyTo(tile.vertsInGraphSpace, 0);
+            transform.InverseTransform(tile.vertsInGraphSpace);
+
+            ConnectTileWithNeighbours(tile);
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                nodes[i].SetNavmeshHolder(this);
+            }
+
+            return tile;
+        }
+
+        public void RemoveConnectionsFromTile(NavmeshTile tile)
+        {
+            if (tile.x > 0)
+            {
+                int x = tile.x - 1;
+                for (int z = tile.z; z < tile.z + tile.d; z++)
+                    RemoveConnectionsFromTo(tiles[x + z * tileXCount], tile);
+            }
+            if (tile.x + tile.w < tileXCount)
+            {
+                int x = tile.x + tile.w;
+                for (int z = tile.z; z < tile.z + tile.d; z++)
+                    RemoveConnectionsFromTo(tiles[x + z * tileXCount], tile);
+            }
+            if (tile.z > 0)
+            {
+                int z = tile.z - 1;
+                for (int x = tile.x; x < tile.x + tile.w; x++)
+                    RemoveConnectionsFromTo(tiles[x + z * tileXCount], tile);
+            }
+            if (tile.z + tile.d < tileZCount)
+            {
+                int z = tile.z + tile.d;
+                for (int x = tile.x; x < tile.x + tile.w; x++)
+                    RemoveConnectionsFromTo(tiles[x + z * tileXCount], tile);
+            }
+        }
+
+        public void RemoveConnectionsFromTo(NavmeshTile a, NavmeshTile b)
+        {
+            if (a == null || b == null)
+                return;
+            //Same tile, possibly from a large tile (one spanning several x,z tile coordinates)
+            if (a == b)
+                return;
+
+            int tileIdx = b.x + b.z * tileXCount;
+
+            for (int i = 0; i < a.nodes.Length; i++)
+            {
+                TriangleMeshNode node = a.nodes[i];
+                if (node.connections == null)
+                    continue;
+                for (int j = 0; ; j++)
+                {
+                    //Length will not be constant if connections are removed
+                    if (j >= node.connections.Length)
+                        break;
+
+                    var other = node.connections[j].node as TriangleMeshNode;
+
+                    //Only evaluate TriangleMeshNodes
+                    if (other == null)
+                        continue;
+
+                    int tileIdx2 = other.GetVertexIndex(0);
+                    tileIdx2 = (tileIdx2 >> TileIndexOffset) & TileIndexMask;
+
+                    if (tileIdx2 == tileIdx)
+                    {
+                        node.RemoveConnection(node.connections[j].node);
+                        j--;
+                    }
+                }
+            }
+        }
 	}
 }

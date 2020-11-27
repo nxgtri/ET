@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	public interface IAstarPooledObject {
 		void OnEnterPool ();
 	}

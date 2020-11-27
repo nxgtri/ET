@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Finds a path in a random direction from the start node.
 	 * \ingroup paths
 	 * Terminates and returns when G \>= \a length (passed to the constructor) + RandomPath.spread or when there are no more nodes left to search.\n
@@ -96,14 +96,15 @@ namespace PF {
 			throw new System.Exception("This constructor is obsolete. Please use the pooling API and the Setup methods");
 		}
 
-		public static RandomPath Construct (Vector3 start, int length, OnPathDelegate callback = null) {
+		public static RandomPath Construct (NavmeshData navmeshData, Vector3 start, int length, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<RandomPath>();
 
-			p.Setup(start, length, callback);
+			p.Setup(navmeshData, start, length, callback);
 			return p;
 		}
 
-		protected RandomPath Setup (Vector3 start, int length, OnPathDelegate callback) {
+		protected RandomPath Setup (NavmeshData navmeshData, Vector3 start, int length, OnPathDelegate callback) {
+            this.navmeshData = navmeshData;
 			this.callback = callback;
 
 			searchLength = length;
@@ -136,7 +137,7 @@ namespace PF {
 
 		protected override void Prepare () {
 			nnConstraint.tags = enabledTags;
-			var startNNInfo  = PathFindHelper.GetNearest(startPoint, nnConstraint);
+			var startNNInfo  = navmeshData.GetNearestOnWalkableNavmesh(startPoint, nnConstraint);
 
 			startPoint = startNNInfo.position;
 			endPoint = startPoint;

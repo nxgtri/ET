@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Holds a coordinate in integers */
 	public struct Int3 : System.IEquatable<Int3> {
 		public int x;

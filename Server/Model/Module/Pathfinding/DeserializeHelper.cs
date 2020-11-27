@@ -1,16 +1,28 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using PF;
-using Guid = PF.Guid;
+using System.IO;
+using ETPathfinder.PF;
+using Guid = ETPathfinder.PF.Guid;
 
-namespace ETModel
+namespace ETPathfinder
 {
     public static class DeserializeHelper
     {
         public static NavGraph[] Load(string filePath)
         {
             byte[] bytes = AstarSerializer.LoadFromFile(filePath);
-            
+            return Load(bytes);
+        }
+
+        public static NavGraph[] Load(Stream stream)
+        {
+            var bytes = new byte[(int)stream.Length];
+            stream.Read(bytes, 0, (int)stream.Length);
+            return Load(bytes);
+        }
+
+        public static NavGraph[] Load(byte[] bytes)
+        {
             AstarSerializer sr = new AstarSerializer();
 
             if (!sr.OpenDeserialize(bytes))

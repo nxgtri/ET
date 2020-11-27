@@ -2,7 +2,7 @@
 #pragma warning disable 429
 #define DECREASE_KEY
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Binary heap implementation.
 	 * Binary heaps are really fast for ordering nodes in a way that
 	 * makes it possible to get the node with the lowest F score.

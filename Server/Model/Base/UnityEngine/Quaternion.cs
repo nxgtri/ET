@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Globalization;
 
-namespace UnityEngine
+namespace ETPathfinder.UnityEngine
 {
     [Serializable]
     public struct Quaternion: IEquatable<Quaternion>
@@ -63,18 +63,6 @@ namespace UnityEngine
             this.z = (float) ((double) num9 * (double) num6 * (double) num2 - (double) num8 * (double) num5 * (double) num3);
             this.w = (float) ((double) num9 * (double) num6 * (double) num3 + (double) num8 * (double) num5 * (double) num2);
         }
-        
-#if !SERVER
-        public static implicit operator UnityEngine.Quaternion(Quaternion q)
-        {
-            return new UnityEngine.Quaternion(q.x, q.y, q.z, q.w);
-        }
-        
-        public static implicit operator Quaternion(UnityEngine.Quaternion q)
-        {
-            return new Quaternion(q.x, q.y, q.z, q.w);
-        }
-#endif
 
         public override string ToString()
         {

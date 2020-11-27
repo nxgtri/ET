@@ -1,7 +1,9 @@
-using System.Collections.Generic;
-using UnityEngine;
+﻿#define ASTAR_RECAST_LARGER_TILES
 
-namespace PF {
+using System.Collections.Generic;
+using ETPathfinder.UnityEngine;
+
+namespace ETPathfinder.PF {
 	using System.IO;
 	using Math = System.Math;
 	using System.Linq;
@@ -106,14 +108,27 @@ namespace PF {
 
 		/** Show the connections between the polygons in the Unity Editor */
 		[JsonMember]
-		public bool showNodeConnections;
+		public bool showNodeConnections = true;
 
 		/** Show the surface of the navmesh */
 		[JsonMember]
-		public bool showMeshSurface;
+		public bool showMeshSurface = true;
 
 		/** Number of tiles along the X-axis */
 		public int tileXCount;
+
+        public bool IsPointOnNavmesh(Vector3 point)
+        {
+            var info = GetNearest(point, NNConstraint.Default);
+            var node = info.node as TriangleMeshNode;
+            if (node == null)
+            {
+                return false;
+            }
+
+            return node.ContainsPoint(new Vector3(point.x, 0, point.z));
+        }
+
 		/** Number of tiles along the Z-axis */
 		public int tileZCount;
 
@@ -133,7 +148,7 @@ namespace PF {
 		 * You can also control this using a \link Pathfinding.NNConstraint.distanceXZ field on an NNConstraint object\endlink.
 		 */
 		[JsonMember]
-		public bool nearestSearchOnlyXZ;
+		public bool nearestSearchOnlyXZ = true;
 
 		/** Currently updating tiles in a batch */
 		bool batchTileUpdate;
@@ -154,7 +169,11 @@ namespace PF {
 		 * (not ones that simply modify e.g penalties).
 		 * It is not called after NavmeshCut updates.
 		 */
-		public System.Action<NavmeshTile[]> OnRecalculatedTiles;
+		public System.Action<List<NavmeshTile>> OnRecalculatedTiles;
+
+        public System.Action<GraphNode> OnDestroyNode;
+
+        public System.Func<int> GetNewNodeIndex;
 
 		/** Tile at the specified x, z coordinate pair.
 		 * The first tile is at (0,0), the last tile at (tileXCount-1, tileZCount-1).
@@ -220,10 +239,7 @@ namespace PF {
 
 		protected override void OnDestroy () {
 			base.OnDestroy();
-#if !SERVER // 服务端不需要释放
-			// Cleanup
-			TriangleMeshNode.SetNavmeshHolder(AstarPath.active.data.GetGraphIndex(this), null);
-#endif
+
 			if (tiles != null) {
 				for (int i = 0; i < tiles.Length; i++) {
 					ObjectPool<BBTree>.Release(ref tiles[i].bbTree);
@@ -595,7 +611,7 @@ namespace PF {
 			ListPool<Connection>.Release(ref connectionsToKeep);
 		}
 
-		public void CreateNodes (TriangleMeshNode[] buffer, int[] tris, int tileIndex, uint graphIndex) {
+		public void CreateNodes(TriangleMeshNode[] buffer, int[] tris, int tileIndex, uint graphIndex, INavmeshHolder navmesh, INodeIndexGenerator nodeIndexGenerator) {
 			if (buffer == null || buffer.Length < tris.Length/3) throw new System.ArgumentException("buffer must be non null and at least as large as tris.Length/3");
 			// This index will be ORed to the triangle indices
 			tileIndex <<= TileIndexOffset;
@@ -604,7 +620,7 @@ namespace PF {
 			for (int i = 0; i < buffer.Length; i++) {
 				var node = buffer[i];
 				// Allow the buffer to be partially filled in already to allow for recycling nodes
-				if (node == null) node = buffer[i] = new TriangleMeshNode();
+				if (node == null) node = buffer[i] = new TriangleMeshNode(navmesh);
 
 				// Reset all relevant fields on the node (even on recycled nodes to avoid exposing internal implementation details)
 				node.Walkable = true;
@@ -616,6 +632,8 @@ namespace PF {
 				node.v0 = tris[i*3+0] | tileIndex;
 				node.v1 = tris[i*3+1] | tileIndex;
 				node.v2 = tris[i*3+2] | tileIndex;
+
+                node.SetPathNodeIndex(nodeIndexGenerator.GetNewNodeIndex());
 
 				// Make sure the triangle is clockwise in graph space (it may not be in world space since the graphs can be rotated)
 				if (RecalculateNormals && !VectorMath.IsClockwiseXZ(node.GetVertexInGraphSpace(0), node.GetVertexInGraphSpace(1), node.GetVertexInGraphSpace(2))) {
@@ -768,9 +786,7 @@ namespace PF {
 				node = graph.GetNearest(origin, NNConstraintNone).node as TriangleMeshNode;
 
 				if (node == null) {
-#if !SERVER
-					UnityEngine.Debug.LogError("Could not find a valid node to start from");
-#endif
+					//UnityEngine.Debug.LogError("Could not find a valid node to start from");
 					hit.origin = origin;
 					hit.point = origin;
 					return true;
@@ -802,9 +818,7 @@ namespace PF {
 			while (true) {
 				counter++;
 				if (counter > 2000) {
-#if !SERVER
-					UnityEngine.Debug.LogError("Linecast was stuck in infinite loop. Breaking.");
-#endif
+					//UnityEngine.Debug.LogError("Linecast was stuck in infinite loop. Breaking.");
 					return true;
 				}
 
@@ -831,9 +845,7 @@ namespace PF {
 				if (shapeEdgeA == 0xFF) {
 					// Line does not intersect node at all?
 					// This may theoretically happen if the origin was not properly snapped to the inside of the triangle, but is instead a tiny distance outside the node.
-#if !SERVER
-					UnityEngine.Debug.LogError("Line does not intersect node at all");
-#endif
+					//UnityEngine.Debug.LogError("Line does not intersect node at all");
 					hit.node = node;
 					hit.point = hit.tangentOrigin = hit.origin;
 					return true;
@@ -897,6 +909,48 @@ namespace PF {
 				}
 			}
 		}
+
+        // MM 전용 함수: Linecast()와는 반대로, 갈 수 있는 영역과 라인 사이의 교차를 검사한다.
+        public bool MM_InvertedLinecast(Vector3 origin, Vector3 end)
+        {
+            if (float.IsNaN(origin.x + origin.y + origin.z))
+                throw new System.ArgumentException("origin is NaN");
+            if (float.IsNaN(end.x + end.y + end.z))
+                throw new System.ArgumentException("end is NaN");
+
+            var originTile = GetTileWithPositionClamp(origin);
+            var endTile = GetTileWithPositionClamp(end);
+
+            var i3origin = (Int3)origin;
+            var i3end = (Int3)end;
+
+            if (i3origin == i3end)
+            {
+                return false;
+            }
+
+            // NOTE)    라인이 여러 타일에 걸쳐있으면 중간 타일에 대한 교차검사는 하지 않는다.
+            //          예전 구현이 이렇게 되어있었고 타일 개수가 1개라서 문제되지 않는다.
+
+            if (originTile.bbTree.MM_Linecast(i3origin, i3end))
+            {
+                return true;
+            }
+            if (originTile != endTile && endTile.bbTree.MM_Linecast(i3origin, i3end))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        NavmeshTile GetTileWithPositionClamp(Vector3 position)
+        {
+            var tileCoord = GetTileCoordinates(position);
+            tileCoord.x = Mathf.Clamp(tileCoord.x, 0, tileXCount - 1);
+            tileCoord.y = Mathf.Clamp(tileCoord.y, 0, tileZCount - 1);
+            return GetTile(tileCoord.x, tileCoord.y);
+        }
 
 		/** Serializes Node Info.
 		 * Should serialize:
@@ -977,9 +1031,6 @@ namespace PF {
 
 			tiles = new NavmeshTile[tileXCount * tileZCount];
 
-			//Make sure mesh nodes can reference this graph
-			TriangleMeshNode.SetNavmeshHolder((int)ctx.graphIndex, this);
-
 			for (int z = 0; z < tileZCount; z++) {
 				for (int x = 0; x < tileXCount; x++) {
 					int tileIndex = x + z*tileXCount;
@@ -1036,7 +1087,7 @@ namespace PF {
 					tileIndex <<= TileIndexOffset;
 
 					for (int i = 0; i < tile.nodes.Length; i++) {
-						var node = new TriangleMeshNode();
+						var node = new TriangleMeshNode(this);
 						tile.nodes[i] = node;
 
 						node.DeserializeNode(ctx);

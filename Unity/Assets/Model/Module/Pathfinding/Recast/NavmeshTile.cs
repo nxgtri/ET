@@ -1,4 +1,4 @@
-namespace PF {
+namespace ETPathfinder.PF {
 
 	public class NavmeshTile : INavmeshHolder {
 		/** Tile triangles */
@@ -19,12 +19,12 @@ namespace PF {
 		/** Width, in tile coordinates.
 		 * \warning Widths other than 1 are not supported. This is mainly here for possible future features.
 		 */
-		public int w;
+		public int w = 1;
 
 		/** Depth, in tile coordinates.
 		 * \warning Depths other than 1 are not supported. This is mainly here for possible future features.
 		 */
-		public int d;
+		public int d = 1;
 
 		/** All nodes in the tile */
 		public TriangleMeshNode[] nodes;

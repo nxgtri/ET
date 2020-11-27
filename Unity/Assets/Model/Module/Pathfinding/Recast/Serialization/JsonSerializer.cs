@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 #if ASTAR_NO_ZIP
 using Pathfinding.Serialization.Zip;
 #elif NETFX_CORE
@@ -12,7 +12,7 @@ using ZipFile = System.IO.Compression.ZipArchive;
 using Pathfinding.Ionic.Zip;
 #endif
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Holds information passed to custom graph serializers */
 	public class GraphSerializationContext {
 		private readonly GraphNode[] id2NodeMapping;
@@ -240,7 +240,12 @@ namespace PF {
 			return bytes;
 		}
 
-		public void SerializeGraphs (NavGraph[] _graphs) {
+        public void AddHash(string hash)
+        {
+            zip.AddEntry("Hash", hash);
+        }
+
+		public void SerializeGraphs(NavGraph[] _graphs) {
 			if (graphs != null) throw new InvalidOperationException("Cannot serialize graphs multiple times.");
 			graphs = _graphs;
 
@@ -311,9 +316,7 @@ namespace PF {
 				graphs[i].GetNodes(node => {
 					maxIndex = Math.Max(node.NodeIndex, maxIndex);
 					if (node.NodeIndex == -1) {
-#if !SERVER
-						UnityEngine.Debug.LogError("Graph contains destroyed nodes. This is a bug.");
-#endif
+						//UnityEngine.Debug.LogError("Graph contains destroyed nodes. This is a bug.");
 					}
 				});
 			}
@@ -430,10 +433,8 @@ namespace PF {
 				zip = ZipFile.Read(zipStream);
 #endif
 			} catch (Exception e) {
-#if !SERVER
 				// Catches exceptions when an invalid zip file is found
-				UnityEngine.Debug.LogError("Caught exception when loading from zip\n"+e);
-#endif
+				//UnityEngine.Debug.LogError("Caught exception when loading from zip\n"+e);
 				zipStream.Dispose();
 				return false;
 			}
@@ -445,19 +446,7 @@ namespace PF {
 			} else {
 				throw new Exception("No metadata found in serialized data.");
 			}
-#if !SERVER
-			if (FullyDefinedVersion(meta.version) > FullyDefinedVersion(AstarPath.Version)) {
-				UnityEngine.Debug.LogWarning("Trying to load data from a newer version of the A* Pathfinding Project\nCurrent version: "+AstarPath.Version+" Data version: "+meta.version +
-					"\nThis is usually fine as the stored data is usually backwards and forwards compatible." +
-					"\nHowever node data (not settings) can get corrupted between versions (even though I try my best to keep compatibility), so it is recommended " +
-					"to recalculate any caches (those for faster startup) and resave any files. Even if it seems to load fine, it might cause subtle bugs.\n");
-			} else if (FullyDefinedVersion(meta.version) < FullyDefinedVersion(AstarPath.Version)) {
-				UnityEngine.Debug.LogWarning("Upgrading serialized pathfinding data from version " + meta.version + " to " + AstarPath.Version +
-					"\nThis is usually fine, it just means you have upgraded to a new version." +
-					"\nHowever node data (not settings) can get corrupted between versions (even though I try my best to keep compatibility), so it is recommended " +
-					"to recalculate any caches (those for faster startup) and resave any files. Even if it seems to load fine, it might cause subtle bugs.\n");
-			}
-#endif
+
 			return true;
 		}
 
@@ -626,9 +615,7 @@ namespace PF {
 			// Sanity check
 			// Make sure the graphs don't contain destroyed nodes
 			if (AnyDestroyedNodesInGraphs()) {
-#if !SERVER
-				UnityEngine.Debug.LogError("Graph contains destroyed nodes. This is a bug.");
-#endif
+				//UnityEngine.Debug.LogError("Graph contains destroyed nodes. This is a bug.");
 			}
 
 			// Deserialize map from old node indices to new nodes
@@ -754,7 +741,7 @@ namespace PF {
 #if NETFX_CORE
 			throw new System.NotSupportedException("Cannot load from file on this platform");
 #else
-			using (var stream = new FileStream(path, FileMode.Open)) {
+			using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read)) {
 				var bytes = new byte[(int)stream.Length];
 				stream.Read(bytes, 0, (int)stream.Length);
 				return bytes;
@@ -793,7 +780,7 @@ namespace PF {
 			}
 #else
 			// Note calling through assembly is more stable on e.g WebGL
-			Type type = WindowsStoreCompatibility.GetTypeInfo(typeof(PF.Path)).Assembly.GetType(typeNames[index]);
+			Type type = WindowsStoreCompatibility.GetTypeInfo(typeof(ETPathfinder.PF.Path)).Assembly.GetType(typeNames[index]);
 #endif
 			if (!System.Type.Equals(type, null))
 				return type;

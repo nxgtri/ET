@@ -1,7 +1,7 @@
 #pragma warning disable 414
 using System.Collections.Generic;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	public enum HeuristicOptimizationMode {
 		None,
 		Random,
@@ -58,6 +58,12 @@ namespace PF {
 		uint rval;
 
 		System.Object lockObj = new object ();
+        NavmeshData navmeshData;
+
+        public EuclideanEmbedding(NavmeshData navmeshData)
+        {
+            this.navmeshData = navmeshData;
+        }
 
 		/** Simple linear congruential generator.
 		 * \see http://en.wikipedia.org/wiki/Linear_congruential_generator
@@ -112,7 +118,7 @@ namespace PF {
 		void PickNRandomNodes (int count, List<GraphNode> buffer) {
 			int n = 0;
 
-			var graphs = PathFindHelper.GetConfig().graphs;
+			var graphs = navmeshData.Graphs;
 
 			// Loop through all graphs
 			for (int j = 0; j < graphs.Length; j++) {
@@ -133,7 +139,7 @@ namespace PF {
 		}
 
 		GraphNode PickAnyWalkableNode () {
-			var graphs = PathFindHelper.GetConfig().graphs;
+			var graphs = navmeshData.Graphs;
 			GraphNode first = null;
 
 			// Find any node in the graphs
@@ -173,9 +179,7 @@ namespace PF {
 					if (first != null) {
 						pivotList.Add(first);
 					} else {
-#if !SERVER
-						UnityEngine.Debug.LogError("Could not find any walkable node in any of the graphs.");
-#endif
+						//UnityEngine.Debug.LogError("Could not find any walkable node in any of the graphs.");
 						ListPool<GraphNode>.Release(ref pivotList);
 						return;
 					}

@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Exposes internal methods for graphs.
 	 * This is used to hide methods that should not be used by any user code
 	 * but still have to be 'public' or 'internal' (which is pretty much the same as 'public'
@@ -112,7 +112,7 @@ namespace PF {
 			// This is a default implementation and it is pretty slow
 			// Graphs usually override this to provide faster and more specialised implementations
 
-			float maxDistSqr = constraint == null || constraint.constrainDistance ? PathFindHelper.GetConfig().maxNearestNodeDistanceSqr : float.PositiveInfinity;
+			float maxDistSqr = constraint == null || constraint.constrainDistance ? PathFindHelper.maxNearestNodeDistanceSqr : float.PositiveInfinity;
 
 			float minDist = float.PositiveInfinity;
 			GraphNode minNode = null;

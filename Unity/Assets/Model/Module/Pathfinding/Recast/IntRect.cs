@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF
+namespace ETPathfinder.PF
 {
 	/** Integer Rectangle.
  * Works almost like UnityEngine.Rect but with integer coordinates
@@ -172,19 +172,5 @@ namespace PF
 		public override string ToString () {
 			return "[x: "+xmin+"..."+xmax+", y: " + ymin +"..."+ymax+"]";
 		}
-#if !SERVER
-		/** Draws some debug lines representing the rect */
-		public void DebugDraw (GraphTransform transform, UnityEngine.Color color) {
-			Vector3 p1 = transform.Transform(new Vector3(xmin, 0, ymin));
-			Vector3 p2 = transform.Transform(new Vector3(xmin, 0, ymax));
-			Vector3 p3 = transform.Transform(new Vector3(xmax, 0, ymax));
-			Vector3 p4 = transform.Transform(new Vector3(xmax, 0, ymin));
-
-			UnityEngine.Debug.DrawLine(p1, p2, color);
-			UnityEngine.Debug.DrawLine(p2, p3, color);
-			UnityEngine.Debug.DrawLine(p3, p4, color);
-			UnityEngine.Debug.DrawLine(p4, p1, color);
-		}
-#endif
 	}
 }

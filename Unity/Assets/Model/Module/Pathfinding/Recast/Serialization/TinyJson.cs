@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using System;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
 #if NETFX_CORE
 using System.Linq;
 using WinRTLegacy;
 #endif
 
-namespace PF {
+namespace ETPathfinder.PF {
 	public class JsonMemberAttribute : System.Attribute {
 	}
 	public class JsonOptInAttribute : System.Attribute {

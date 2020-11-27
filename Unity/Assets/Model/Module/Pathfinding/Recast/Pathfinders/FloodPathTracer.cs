@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Restrict suitable nodes by if they have been searched by a FloodPath.
 	 *
 	 * Suitable nodes are in addition to the basic contraints, only the nodes which return true on a FloodPath.HasPathTo (node) call.
@@ -15,9 +15,7 @@ namespace PF {
 		public FloodPathConstraint (FloodPath path) {
 			if (path == null)
 			{
-#if !SERVER
-				UnityEngine.Debug.LogWarning("FloodPathConstraint should not be used with a NULL path");
-#endif
+				//UnityEngine.Debug.LogWarning("FloodPathConstraint should not be used with a NULL path");
 			}
 			this.path = path;
 		}
@@ -49,21 +47,21 @@ namespace PF {
 		 */
 		public FloodPathTracer () {}
 
-		public static FloodPathTracer Construct (Vector3 start, FloodPath flood, OnPathDelegate callback = null) {
+		public static FloodPathTracer Construct (NavmeshData navmeshData, Vector3 start, FloodPath flood, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<FloodPathTracer>();
 
-			p.Setup(start, flood, callback);
+			p.Setup(navmeshData, start, flood, callback);
 			return p;
 		}
 
-		protected void Setup (Vector3 start, FloodPath flood, OnPathDelegate callback) {
+		protected void Setup (NavmeshData navmeshData, Vector3 start, FloodPath flood, OnPathDelegate callback) {
 			this.flood = flood;
 
 			if (flood == null || flood.PipelineState < PathState.Returned) {
 				throw new System.ArgumentException("You must supply a calculated FloodPath to the 'flood' argument");
 			}
 
-			base.Setup(start, flood.originalStartPoint, callback);
+			base.Setup(navmeshData, start, flood.originalStartPoint, callback);
 			nnConstraint = new FloodPathConstraint(flood);
 		}
 
@@ -103,9 +101,7 @@ namespace PF {
 
 				count++;
 				if (count > 1024) {
-#if !SERVER
-					UnityEngine.Debug.LogWarning("Inifinity loop? >1024 node path. Remove this message if you really have that long paths (FloodPathTracer.cs, Trace function)");
-#endif
+					//UnityEngine.Debug.LogWarning("Inifinity loop? >1024 node path. Remove this message if you really have that long paths (FloodPathTracer.cs, Trace function)");
 					break;
 				}
 			}

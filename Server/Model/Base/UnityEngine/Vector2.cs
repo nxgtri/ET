@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Globalization;
 
-namespace UnityEngine
+namespace ETPathfinder.UnityEngine
 {
     [Serializable]
     public struct Vector2: IEquatable<Vector2>

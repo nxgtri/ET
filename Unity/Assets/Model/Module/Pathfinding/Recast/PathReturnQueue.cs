@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine.Profiling;
 #endif
 
-namespace PF {
+namespace ETPathfinder.PF {
 	public class PathReturnQueue {
 		/**
 		 * Holds all paths which are waiting to be flagged as completed.

@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Lightweight List Pool.
 	 * Handy class for pooling lists of type T.
 	 *

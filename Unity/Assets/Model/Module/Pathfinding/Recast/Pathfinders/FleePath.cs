@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Returns a path heading away from a specified point to avoid.
 	 * The search will terminate when G \> \a length (passed to the constructor) + FleePath.spread.\n
 	 * \ingroup paths
@@ -38,15 +38,15 @@ namespace PF {
 		/** Constructs a new FleePath.
 		 * The FleePath will be taken from a pool.
 		 */
-		public static FleePath Construct (Vector3 start, Vector3 avoid, int searchLength, OnPathDelegate callback = null) {
+		public static FleePath Construct (NavmeshData navmeshData, Vector3 start, Vector3 avoid, int searchLength, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<FleePath>();
 
-			p.Setup(start, avoid, searchLength, callback);
+			p.Setup(navmeshData, start, avoid, searchLength, callback);
 			return p;
 		}
 
-		protected void Setup (Vector3 start, Vector3 avoid, int searchLength, OnPathDelegate callback) {
-			Setup(start, searchLength, callback);
+		protected void Setup (NavmeshData navmeshData, Vector3 start, Vector3 avoid, int searchLength, OnPathDelegate callback) {
+			Setup(navmeshData, start, searchLength, callback);
 			aim = avoid-start;
 			// TODO: Why is this multiplication by 10 here?
 			// Might want to remove it

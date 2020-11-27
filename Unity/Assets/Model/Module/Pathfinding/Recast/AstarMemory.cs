@@ -1,6 +1,6 @@
 using System;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Various utilities for handling arrays and memory */
 	public static class Memory {
 		/** Sets all values in an array to a specific value faster than a loop.

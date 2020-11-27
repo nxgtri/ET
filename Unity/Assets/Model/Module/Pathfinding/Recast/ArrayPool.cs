@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Lightweight Array Pool.
 	 * Handy class for pooling arrays of type T.
 	 *

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 
 	/** Represents a connection to another node */
 	public struct Connection {
@@ -66,11 +66,10 @@ namespace PF {
 		private uint penalty;
 #endif
 
-		/** Constructor for a graph node. */
-		protected GraphNode () {
-			this.nodeIndex = PathFindHelper.GetNewNodeIndex();
-			PathFindHelper.InitializeNode(this);
-		}
+        public void SetPathNodeIndex(int nodeIndex)
+        {
+            NodeIndex = nodeIndex;
+        }
 
 		/** Destroys the node.
 		 * Cleans up any temporary pathfinding data used for this node.
@@ -87,11 +86,7 @@ namespace PF {
 			if (Destroyed) return;
 
 			ClearConnections(true);
-#if !SERVER // 服务端不会释放
-			if (AstarPath.active != null) {
-				AstarPath.active.DestroyNode(this);
-			}
-#endif
+
 			NodeIndex = DestroyedNodeIndex;
 		}
 
@@ -129,6 +124,14 @@ namespace PF {
 		 * \code var v3 = (Vector3)node.position; \endcode
 		 */
 		public Int3 position;
+
+        public Vector3 PositionVector3
+        {
+            get
+            {
+                return (Vector3)position;
+            }
+        }
 
 		#region Constants
 		/** Position of the walkable bit. \see Walkable */
@@ -181,11 +184,9 @@ namespace PF {
 			}
 			set {
 				if (value > 0xFFFFFF)
-#if !SERVER
-					UnityEngine.Debug.LogWarning("Very high penalty applied. Are you sure negative values haven't underflowed?\n" +
-						"Penalty values this high could with long paths cause overflows and in some cases infinity loops because of that.\n" +
-						"Penalty value applied: "+value);
-#endif
+					//UnityEngine.Debug.LogWarning("Very high penalty applied. Are you sure negative values haven't underflowed?\n" +
+					//	"Penalty values this high could with long paths cause overflows and in some cases infinity loops because of that.\n" +
+					//	"Penalty value applied: "+value);
 				penalty = value;
 			}
 #else

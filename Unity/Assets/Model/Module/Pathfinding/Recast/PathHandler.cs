@@ -1,6 +1,6 @@
 #define DECREASE_KEY
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Stores temporary node data for a single pathfinding request.
 	 * Every node has one PathNode per thread used.
 	 * It stores e.g G score, H score and other temporary variables needed
@@ -124,7 +124,19 @@ namespace PF {
 		public ushort PathID { get { return pathID; } }
 
 		/** Array of all PathNodes */
-		public PathNode[] nodes = new PathNode[0];
+		public PathNode[] _nodes = new PathNode[0];
+        public PathNode[] nodes
+        {
+            get
+            {
+                return _nodes;
+            }
+            set
+            {
+                _nodes = value;
+            }
+        }
+
 
 		/** StringBuilder that paths can use to build debug strings.
 		 * Better for performance and memory usage to use a single StringBuilder instead of each path creating its own

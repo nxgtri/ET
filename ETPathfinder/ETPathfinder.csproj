@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Server\Model\Module\Pathfinding\**\*.cs">
+        <Link>%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\Unity\Assets\Model\Module\Pathfinding\Recast\**\*.cs">
+        <Link>\Recast\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\Server\Model\Base\UnityEngine\**\*.cs">
+        <Link>\UnityEngine\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="ThirdParty\**" />
+    <EmbeddedResource Remove="ThirdParty\**" />
+    <None Remove="ThirdParty\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="..\Server\Model\Module\Pathfinding\ABPathWrap.cs" />
+    <Compile Remove="..\Server\Model\Module\Pathfinding\PathfindingComponent.cs" />
+    <Compile Remove="..\Unity\Assets\Model\Module\Pathfinding\Recast\AStarConfig.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Pathfinding.ClipperLib">
+      <HintPath>ThirdParty\Pathfinding.ClipperLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Pathfinding.Ionic.Zip.Reduced">
+      <HintPath>..\Server\ThirdParty\Pathfinding.Ionic.Zip.Reduced.dll</HintPath>
+    </Reference>
+    <Reference Include="Pathfinding.Poly2Tri">
+      <HintPath>ThirdParty\Pathfinding.Poly2Tri.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="..\Unity\Assets\Model\Module\Pathfinding\Recast\INodeIndexGenerator.cs" Link="INodeIndexGenerator.cs" />
+    <Compile Update="..\Unity\Assets\Model\Module\Pathfinding\Recast\NavmeshData.cs" Link="NavmeshData.cs" />
+  </ItemGroup>
+</Project>

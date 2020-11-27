@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Interface for something that holds a triangle based navmesh */
 	public interface INavmeshHolder : ITransformedGraph, INavmesh {
 		/** Position of vertex number i in the world */
@@ -20,6 +20,11 @@ namespace PF {
 	/** Node represented by a triangle */
 	public class TriangleMeshNode : MeshNode {
 
+        public TriangleMeshNode(INavmeshHolder navmeshHolder)
+        {
+            this.navmeshHolder = navmeshHolder;
+        }
+
 		/** Internal vertex index for the first vertex */
 		public int v0;
 
@@ -29,31 +34,15 @@ namespace PF {
 		/** Internal vertex index for the third vertex */
 		public int v2;
 
-		/** Holds INavmeshHolder references for all graph indices to be able to access them in a performant manner */
-		protected static INavmeshHolder[] _navmeshHolders = new INavmeshHolder[0];
-
 		/** Used for synchronised access to the #_navmeshHolders array */
 		protected static readonly System.Object lockObject = new System.Object();
 
-		public static INavmeshHolder GetNavmeshHolder (uint graphIndex) {
-			return _navmeshHolders[(int)graphIndex];
-		}
+        INavmeshHolder navmeshHolder;
 
-		/** Sets the internal navmesh holder for a given graph index.
-		 * \warning Internal method
-		 */
-		public static void SetNavmeshHolder (int graphIndex, INavmeshHolder graph) {
-			// We need to lock to make sure that
-			// the resize operation is thread safe
-			lock (lockObject) {
-				if (graphIndex >= _navmeshHolders.Length) {
-					var gg = new INavmeshHolder[graphIndex+1];
-					_navmeshHolders.CopyTo(gg, 0);
-					_navmeshHolders = gg;
-				}
-				_navmeshHolders[graphIndex] = graph;
-			}
-		}
+        public void SetNavmeshHolder(INavmeshHolder navmeshHolder)
+        {
+            this.navmeshHolder = navmeshHolder;
+        }
 
 		/** Set the position of this node to the average of its 3 vertices */
 		public void UpdatePositionFromVertices () {
@@ -75,41 +64,33 @@ namespace PF {
 		 * The vertex array can for example be contained in a recast tile, or be a navmesh graph, that is graph dependant.
 		 * This is slower than GetVertexIndex, if you only need to compare vertices, use GetVertexIndex.
 		 */
-		public int GetVertexArrayIndex (int i) {
-			return GetNavmeshHolder(GraphIndex).GetVertexArrayIndex(i == 0 ? v0 : (i == 1 ? v1 : v2));
+		public int GetVertexArrayIndex(int i) {
+			return navmeshHolder.GetVertexArrayIndex(i == 0 ? v0 : (i == 1 ? v1 : v2));
 		}
 
 		/** Returns all 3 vertices of this node in world space */
-		public void GetVertices (out Int3 v0, out Int3 v1, out Int3 v2) {
-			// Get the object holding the vertex data for this node
-			// This is usually a graph or a recast graph tile
-			var holder = GetNavmeshHolder(GraphIndex);
-
-			v0 = holder.GetVertex(this.v0);
-			v1 = holder.GetVertex(this.v1);
-			v2 = holder.GetVertex(this.v2);
+		public void GetVertices(out Int3 v0, out Int3 v1, out Int3 v2) {
+			v0 = navmeshHolder.GetVertex(this.v0);
+			v1 = navmeshHolder.GetVertex(this.v1);
+			v2 = navmeshHolder.GetVertex(this.v2);
 		}
 
 		/** Returns all 3 vertices of this node in graph space */
-		public void GetVerticesInGraphSpace (out Int3 v0, out Int3 v1, out Int3 v2) {
-			// Get the object holding the vertex data for this node
-			// This is usually a graph or a recast graph tile
-			var holder = GetNavmeshHolder(GraphIndex);
-
-			v0 = holder.GetVertexInGraphSpace(this.v0);
-			v1 = holder.GetVertexInGraphSpace(this.v1);
-			v2 = holder.GetVertexInGraphSpace(this.v2);
+		public void GetVerticesInGraphSpace(out Int3 v0, out Int3 v1, out Int3 v2) {
+			v0 = navmeshHolder.GetVertexInGraphSpace(this.v0);
+			v1 = navmeshHolder.GetVertexInGraphSpace(this.v1);
+			v2 = navmeshHolder.GetVertexInGraphSpace(this.v2);
 		}
 
-		public override Int3 GetVertex (int i) {
-			return GetNavmeshHolder(GraphIndex).GetVertex(GetVertexIndex(i));
+		public override Int3 GetVertex(int i) {
+			return navmeshHolder.GetVertex(GetVertexIndex(i));
 		}
 
-		public Int3 GetVertexInGraphSpace (int i) {
-			return GetNavmeshHolder(GraphIndex).GetVertexInGraphSpace(GetVertexIndex(i));
+		public Int3 GetVertexInGraphSpace(int i) {
+			return navmeshHolder.GetVertexInGraphSpace(GetVertexIndex(i));
 		}
 
-		public override int GetVertexCount () {
+		public override int GetVertexCount() {
 			// A triangle has 3 vertices
 			return 3;
 		}
@@ -139,7 +120,7 @@ namespace PF {
 			GetVerticesInGraphSpace(out a, out b, out c);
 
 			// Convert p to graph space
-			p = GetNavmeshHolder(GraphIndex).transform.InverseTransform(p);
+			p = navmeshHolder.transform.InverseTransform(p);
 
 			// Find the closest point on the triangle to p when looking at the triangle from above (relative to the graph)
 			var closest = Polygon.ClosestPointOnTriangleXZ((Vector3)a, (Vector3)b, (Vector3)c, p);
@@ -185,8 +166,8 @@ namespace PF {
 			return Polygon.ClosestPointOnTriangleXZ((Vector3)tp1, (Vector3)tp2, (Vector3)tp3, p);
 		}
 
-		public override bool ContainsPoint (Vector3 p) {
-			return ContainsPointInGraphSpace((Int3)GetNavmeshHolder(GraphIndex).transform.InverseTransform(p));
+		public override bool ContainsPoint(Vector3 p) {
+			return ContainsPointInGraphSpace((Int3)navmeshHolder.transform.InverseTransform(p));
 		}
 
 		public override bool ContainsPointInGraphSpace (Int3 p) {
@@ -349,9 +330,8 @@ namespace PF {
 
 				// Get the tile coordinates, from them we can figure out which edge is going to be shared
 				int x1, x2, z1, z2, coord;
-				INavmeshHolder nm = GetNavmeshHolder(GraphIndex);
-				nm.GetTileCoordinates(tileIndex1, out x1, out z1);
-				nm.GetTileCoordinates(tileIndex2, out x2, out z2);
+				navmeshHolder.GetTileCoordinates(tileIndex1, out x1, out z1);
+				navmeshHolder.GetTileCoordinates(tileIndex2, out x2, out z2);
 
 				if (System.Math.Abs(x1-x2) == 1) coord = 2;
 				else if (System.Math.Abs(z1-z2) == 1) coord = 0;
@@ -395,10 +375,8 @@ namespace PF {
 		}
 
 		/** \todo This is the area in XZ space, use full 3D space for higher correctness maybe? */
-		public override float SurfaceArea () {
-			var holder = GetNavmeshHolder(GraphIndex);
-
-			return System.Math.Abs(VectorMath.SignedTriangleAreaTimes2XZ(holder.GetVertex(v0), holder.GetVertex(v1), holder.GetVertex(v2))) * 0.5f;
+		public override float SurfaceArea() {
+			return System.Math.Abs(VectorMath.SignedTriangleAreaTimes2XZ(navmeshHolder.GetVertex(v0), navmeshHolder.GetVertex(v1), navmeshHolder.GetVertex(v2))) * 0.5f;
 		}
 
 		public override void SerializeNode (GraphSerializationContext ctx) {

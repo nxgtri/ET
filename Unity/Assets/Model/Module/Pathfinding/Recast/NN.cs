@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF
+namespace ETPathfinder.PF
 {
 
 	/** Nearest node constraint. Constrains which nodes will be returned by the \link AstarPath.GetNearest GetNearest\endlink function */
@@ -43,7 +43,7 @@ namespace PF
 		 *
 		 * The navmesh/recast graphs also contain a global option for this: \link Pathfinding.NavmeshBase.nearestSearchOnlyXZ nearestSearchOnlyXZ\endlink.
 		 */
-		public bool distanceXZ;
+		public bool distanceXZ = true;
 
 		/** Sets if tags should be constrained.
 		 * \see #tags

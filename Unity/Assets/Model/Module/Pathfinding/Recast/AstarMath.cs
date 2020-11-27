@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using System;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 
 	/** Contains various spline functions.
 	 * \ingroup utils
 	 */
-	static class AstarSplines {
+	public static class AstarSplines {
 		public static Vector3 CatmullRom (Vector3 previous, Vector3 start, Vector3 end, Vector3 next, float elapsedTime) {
 			// References used:
 			// p.266 GemsV1
@@ -1353,9 +1353,7 @@ namespace PF {
 
 				counter++;
 				if (counter > 10000) {
-#if !SERVER
-					UnityEngine.Debug.LogWarning("Infinite Loop in Convex Hull Calculation");
-#endif
+					//UnityEngine.Debug.LogWarning("Infinite Loop in Convex Hull Calculation");
 					break;
 				}
 			} while (pointOnHull != startpoint);

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace PF
+namespace ETPathfinder.PF
 {
     public static class AstarDeserializer
     {
@@ -35,9 +35,7 @@ namespace PF
 				}
 				//AstarPath.active.VerifyIntegrity();
 			} catch (System.Exception e) {
-#if !SERVER
-				UnityEngine.Debug.LogError("Caught exception while deserializing data.\n"+e);
-#endif
+				//UnityEngine.Debug.LogError("Caught exception while deserializing data.\n"+e);
 				throw;
 			}
 		}
@@ -67,9 +65,7 @@ namespace PF
 			for (int i = 0; i < graphs.Length; i++) {
 				for (int j = i+1; j < graphs.Length; j++) {
 					if (graphs[i] != null && graphs[j] != null && graphs[i].guid == graphs[j].guid) {
-#if !SERVER
-						UnityEngine.Debug.LogWarning("Guid Conflict when importing graphs additively. Imported graph will get a new Guid.\nThis message is (relatively) harmless.");
-#endif
+						//UnityEngine.Debug.LogWarning("Guid Conflict when importing graphs additively. Imported graph will get a new Guid.\nThis message is (relatively) harmless.");
 						graphs[i].guid = Guid.NewGuid();
 						break;
 					}

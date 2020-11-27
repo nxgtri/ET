@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 
 	/** Implements the funnel algorithm as well as various related methods.
 	 * \see http://digestingduck.blogspot.se/2010/03/simple-stupid-funnel-algorithm.html
@@ -356,9 +356,7 @@ namespace PF {
 				}
 
 				if (funnelPath.Count > 2000) {
-#if !SERVER
-					UnityEngine.Debug.LogWarning("Avoiding infinite loop. Remove this check if you have this long paths.");
-#endif
+					//UnityEngine.Debug.LogWarning("Avoiding infinite loop. Remove this check if you have this long paths.");
 					break;
 				}
 

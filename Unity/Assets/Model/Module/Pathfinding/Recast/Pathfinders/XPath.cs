@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Extended Path.
 	 * \ingroup paths
 	 * This is the same as a standard path but it is possible to customize when the target should be considered reached.
@@ -26,10 +26,10 @@ namespace PF {
 
 		public XPath () {}
 
-		public new static XPath Construct (Vector3 start, Vector3 end, OnPathDelegate callback = null) {
+		public new static XPath Construct (NavmeshData navmeshData, Vector3 start, Vector3 end, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<XPath>();
 
-			p.Setup(start, end, callback);
+			p.Setup(navmeshData, start, end, callback);
 			p.endingCondition = new ABPathEndingCondition(p);
 			return p;
 		}

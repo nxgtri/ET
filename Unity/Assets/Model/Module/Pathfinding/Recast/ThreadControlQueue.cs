@@ -1,6 +1,6 @@
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Queue of paths to be processed by the system */
-	class ThreadControlQueue 
+	public class ThreadControlQueue 
 	{
 
 		Path head;

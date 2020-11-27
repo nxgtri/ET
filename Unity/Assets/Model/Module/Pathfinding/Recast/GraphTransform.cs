@@ -1,6 +1,6 @@
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Transforms to and from world space to a 2D movement plane.
 	 * The transformation is guaranteed to be purely a rotation
 	 * so no scale or offset is used. This interface is primarily
@@ -109,6 +109,13 @@ namespace PF {
 			if (onlyTranslational) return point - i3translation;
 			return (Int3)inverseMatrix.MultiplyPoint3x4((Vector3)point);
 		}
+
+        public Int3 Transform(Int3 point)
+        {
+            if (onlyTranslational)
+                return point + i3translation;
+            return (Int3)matrix.MultiplyPoint3x4((Vector3)point);
+        }
 
 		public void InverseTransform (Int3[] arr) {
 			for (int i = arr.Length - 1; i >= 0; i--) arr[i] = (Int3)inverseMatrix.MultiplyPoint3x4((Vector3)arr[i]);

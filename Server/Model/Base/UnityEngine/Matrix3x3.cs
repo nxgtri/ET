@@ -3,7 +3,7 @@
 // Licensed under the MIT license
 //**************************************************
 
-namespace UnityEngine
+namespace ETPathfinder.UnityEngine
 {
 	public struct Matrix3x3
 	{

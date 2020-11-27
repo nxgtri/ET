@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using PF;
-using UnityEngine;
+using ETPathfinder.PF;
+using ETPathfinder.UnityEngine;
 
-namespace ETModel
+namespace ETPathfinder
 {
     public static class PathModifyHelper
     {
-        public static void StartEndModify(PF.ABPath abPath)
+        public static void StartEndModify(ETPathfinder.PF.ABPath abPath)
         {
 	        if (abPath.vectorPath.Count == 1)
 	        {
@@ -41,7 +41,7 @@ namespace ETModel
 				var part = parts[i];
 				if (!part.isLink) {
 					var portals = Funnel.ConstructFunnelPortals(p.path, part);
-					var result = Funnel.Calculate(portals, true, false);
+					var result = Funnel.Calculate(portals, false, false);
 					funnelPath.AddRange(result);
 					ListPool<Vector3>.Release(ref portals.left);
 					ListPool<Vector3>.Release(ref portals.right);

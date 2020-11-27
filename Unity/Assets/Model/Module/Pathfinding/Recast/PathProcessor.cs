@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace PF {
+namespace ETPathfinder.PF {
 #if NETFX_CORE
 	using Thread = Pathfinding.WindowsStore.Thread;
 #else
@@ -14,10 +14,10 @@ namespace PF {
 		public event System.Action<Path> OnPathPostSearch;
 		public event System.Action OnQueueUnblocked;
 
-		internal readonly ThreadControlQueue queue;
+		public readonly ThreadControlQueue queue;
 		readonly PathReturnQueue returnQueue;
 
-		readonly PathHandler[] pathHandlers;
+		public readonly PathHandler[] pathHandlers;
 
 		/** References to each of the pathfinding threads */
 		readonly Thread[] threads;
@@ -30,17 +30,6 @@ namespace PF {
 		 * \see CalculatePathsHandler
 		 */
 		IEnumerator threadCoroutine;
-
-		/** Holds the next node index which has not been used by any previous node.
-		 * \see nodeIndexPool
-		 */
-		int nextNodeIndex = 1;
-
-		/** Holds indices for nodes that have been destroyed.
-		 * To avoid trashing a lot of memory structures when nodes are
-		 * frequently deleted and created, node indices are reused.
-		 */
-		readonly Stack<int> nodeIndexPool = new Stack<int>();
 
 		readonly List<int> locks = new List<int>();
 		int nextLockID = 0;
@@ -64,7 +53,7 @@ namespace PF {
 			}
 		}
 
-		internal PathProcessor (PathReturnQueue returnQueue, int processors, bool multithreaded) {
+		public PathProcessor(PathReturnQueue returnQueue, int processors, bool multithreaded) {
 			this.returnQueue = returnQueue;
 
 			if (processors < 0) {
@@ -161,9 +150,7 @@ namespace PF {
 					}
 #else
 					if (!threads[i].Join(50)) {
-#if !SERVER
-						UnityEngine.Debug.LogError("Could not terminate pathfinding thread["+i+"] in 50ms, trying Thread.Abort");
-#endif
+						//UnityEngine.Debug.LogError("Could not terminate pathfinding thread["+i+"] in 50ms, trying Thread.Abort");
 						threads[i].Abort();
 					}
 #endif
@@ -182,13 +169,6 @@ namespace PF {
 #endif
 		}
 
-		/** Returns a new global node index.
-		 * \warning This method should not be called directly. It is used by the GraphNode constructor.
-		 */
-		public int GetNewNodeIndex () {
-			return nodeIndexPool.Count > 0 ? nodeIndexPool.Pop() : nextNodeIndex++;
-		}
-
 		/** Initializes temporary path data for a node.
 		 * \warning This method should not be called directly. It is used by the GraphNode constructor.
 		 */
@@ -203,6 +183,22 @@ namespace PF {
 			}
 		}
 
+        public void InitializeNode(NavmeshTile tile)
+        {
+            foreach (var node in tile.nodes)
+            {
+                InitializeNode(node);
+            }
+        }
+
+        internal void InitializeNode(NavmeshBase walkableNavmesh)
+        {
+            foreach (var tile in walkableNavmesh.tiles)
+            {
+                InitializeNode(tile);
+            }
+        }
+
 		/** Destroyes the given node.
 		 * This is to be called after the node has been disconnected from the graph so that it cannot be reached from any other nodes.
 		 * It should only be called during graph updates, that is when the pathfinding threads are either not running or paused.
@@ -211,8 +207,6 @@ namespace PF {
 		 */
 		public void DestroyNode (GraphNode node) {
 			if (node.NodeIndex == -1) return;
-
-			nodeIndexPool.Push(node.NodeIndex);
 
 			for (int i = 0; i < pathHandlers.Length; i++) {
 				pathHandlers[i].DestroyNode(node);
@@ -262,11 +256,6 @@ namespace PF {
 				ipath.Prepare();
 
 				if (!path.IsDone()) {
-					// For visualization purposes, we set the last computed path to p, so we can view debug info on it in the editor (scene view).
-					PathFindHelper.debugPathData = ipath.PathHandler;
-					PathFindHelper.debugPathID = path.pathID;
-
-
 					// Initialize the path, now ready to begin search
 					ipath.Initialize();
 
@@ -312,22 +301,16 @@ namespace PF {
 		catch (System.Exception e) {
 			{
 				if (PathFindHelper.logPathResults == PathLog.Heavy)
-#if !SERVER
-					UnityEngine.Debug.LogWarning("Shutting down pathfinding thread #" + pathHandler.threadID);
-#endif
+					//UnityEngine.Debug.LogWarning("Shutting down pathfinding thread #" + pathHandler.threadID);
 				return;
 			}
-#if !SERVER
-			UnityEngine.Debug.LogException(e);
-			UnityEngine.Debug.LogError("Unhandled exception during pathfinding. Terminating.");
-#endif
+			//UnityEngine.Debug.LogException(e);
+			//UnityEngine.Debug.LogError("Unhandled exception during pathfinding. Terminating.");
 			// Unhandled exception, kill pathfinding
 		}
 #endif
 
-#if !SERVER
-			UnityEngine.Debug.LogError("Error : This part should never be reached.");
-#endif
+			//UnityEngine.Debug.LogError("Error : This part should never be reached.");
 		}
 
 		public IEnumerator CalculatePaths()
@@ -343,7 +326,7 @@ namespace PF {
 		 */
 		IEnumerator CalculatePaths (PathHandler pathHandler) {
 			// Max number of ticks before yielding/sleeping
-			long maxTicks = (long)(PathFindHelper.GetConfig().maxFrameTime*10000);
+			long maxTicks = (long)(PathFindHelper.maxFrameTime*10000);
 			long targetTick = System.DateTime.UtcNow.Ticks + maxTicks;
 
 			while (true) {
@@ -365,10 +348,6 @@ namespace PF {
 
 				IPathInternals ip = (IPathInternals)p;
 
-				// Max number of ticks we are allowed to continue working in one run
-				// One tick is 1/10000 of a millisecond
-				maxTicks = (long)(PathFindHelper.GetConfig().maxFrameTime*10000);
-
 				ip.PrepareBase(pathHandler);
 
 				// Now processing the path
@@ -389,10 +368,6 @@ namespace PF {
 				// Check if the Prepare call caused the path to complete
 				// If this happens the path usually failed
 				if (!p.IsDone()) {
-					// For debug uses, we set the last computed path to p, so we can view debug info on it in the editor (scene view).
-					PathFindHelper.debugPathData = ip.PathHandler;
-					PathFindHelper.debugPathID = p.pathID;
-
 					// Initialize the path, now ready to begin search
 					ip.Initialize();
 

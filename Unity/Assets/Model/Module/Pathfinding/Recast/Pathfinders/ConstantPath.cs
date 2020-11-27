@@ -2,9 +2,9 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using ETPathfinder.UnityEngine;
 
-namespace PF {
+namespace ETPathfinder.PF {
 	/** Finds all nodes within a specified distance from the start.
 	 * This class will search outwards from the start point and find all nodes which it costs less than ConstantPath.maxGScore to reach, this is usually the same as the distance to them multiplied with 1000
 	 *
@@ -56,15 +56,16 @@ namespace PF {
 		 * Searching will be stopped when a node has a G score (cost to reach it) greater or equal to \a maxGScore
 		 * in order words it will search all nodes with a cost to get there less than \a maxGScore.
 		 */
-		public static ConstantPath Construct (Vector3 start, int maxGScore, OnPathDelegate callback = null) {
+		public static ConstantPath Construct (NavmeshData navmeshData, Vector3 start, int maxGScore, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<ConstantPath>();
 
-			p.Setup(start, maxGScore, callback);
+			p.Setup(navmeshData, start, maxGScore, callback);
 			return p;
 		}
 
 		/** Sets up a ConstantPath starting from the specified point */
-		protected void Setup (Vector3 start, int maxGScore, OnPathDelegate callback) {
+		protected void Setup (NavmeshData navmeshData, Vector3 start, int maxGScore, OnPathDelegate callback) {
+            this.navmeshData = navmeshData;
 			this.callback = callback;
 			startPoint = start;
 			originalStartPoint = startPoint;
@@ -95,7 +96,7 @@ namespace PF {
 
 		protected override void Prepare () {
 			nnConstraint.tags = enabledTags;
-			var startNNInfo  = PathFindHelper.GetNearest(startPoint, nnConstraint);
+			var startNNInfo  = navmeshData.GetNearestOnWalkableNavmesh(startPoint, nnConstraint);
 
 			startNode = startNNInfo.node;
 			if (startNode == null) {
