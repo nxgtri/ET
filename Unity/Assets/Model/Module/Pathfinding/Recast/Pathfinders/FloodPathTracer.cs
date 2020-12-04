@@ -47,21 +47,21 @@ namespace ETPathfinder.PF {
 		 */
 		public FloodPathTracer () {}
 
-		public static FloodPathTracer Construct (NavmeshData navmeshData, Vector3 start, FloodPath flood, OnPathDelegate callback = null) {
+		public static FloodPathTracer Construct (PathfinderConfig config, Vector3 start, FloodPath flood, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<FloodPathTracer>();
 
-			p.Setup(navmeshData, start, flood, callback);
+			p.Setup(config, start, flood, callback);
 			return p;
 		}
 
-		protected void Setup (NavmeshData navmeshData, Vector3 start, FloodPath flood, OnPathDelegate callback) {
+		protected void Setup (PathfinderConfig config, Vector3 start, FloodPath flood, OnPathDelegate callback) {
 			this.flood = flood;
 
 			if (flood == null || flood.PipelineState < PathState.Returned) {
 				throw new System.ArgumentException("You must supply a calculated FloodPath to the 'flood' argument");
 			}
 
-			base.Setup(navmeshData, start, flood.originalStartPoint, callback);
+			base.Setup(config, start, flood.originalStartPoint, callback);
 			nnConstraint = new FloodPathConstraint(flood);
 		}
 

@@ -56,16 +56,16 @@ namespace ETPathfinder.PF {
 		 * Searching will be stopped when a node has a G score (cost to reach it) greater or equal to \a maxGScore
 		 * in order words it will search all nodes with a cost to get there less than \a maxGScore.
 		 */
-		public static ConstantPath Construct (NavmeshData navmeshData, Vector3 start, int maxGScore, OnPathDelegate callback = null) {
+		public static ConstantPath Construct (PathfinderConfig config, Vector3 start, int maxGScore, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<ConstantPath>();
 
-			p.Setup(navmeshData, start, maxGScore, callback);
+			p.Setup(config, start, maxGScore, callback);
 			return p;
 		}
 
 		/** Sets up a ConstantPath starting from the specified point */
-		protected void Setup (NavmeshData navmeshData, Vector3 start, int maxGScore, OnPathDelegate callback) {
-            this.navmeshData = navmeshData;
+		protected void Setup (PathfinderConfig config, Vector3 start, int maxGScore, OnPathDelegate callback) {
+            this.config = config;
 			this.callback = callback;
 			startPoint = start;
 			originalStartPoint = startPoint;
@@ -96,7 +96,7 @@ namespace ETPathfinder.PF {
 
 		protected override void Prepare () {
 			nnConstraint.tags = enabledTags;
-			var startNNInfo  = navmeshData.GetNearestOnWalkableNavmesh(startPoint, nnConstraint);
+			var startNNInfo  = config.GetNearest(startPoint, nnConstraint);
 
 			startNode = startNNInfo.node;
 			if (startNode == null) {

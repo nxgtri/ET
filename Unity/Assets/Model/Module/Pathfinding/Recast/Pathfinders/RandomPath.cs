@@ -96,15 +96,15 @@ namespace ETPathfinder.PF {
 			throw new System.Exception("This constructor is obsolete. Please use the pooling API and the Setup methods");
 		}
 
-		public static RandomPath Construct (NavmeshData navmeshData, Vector3 start, int length, OnPathDelegate callback = null) {
+		public static RandomPath Construct (PathfinderConfig config, Vector3 start, int length, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<RandomPath>();
 
-			p.Setup(navmeshData, start, length, callback);
+			p.Setup(config, start, length, callback);
 			return p;
 		}
 
-		protected RandomPath Setup (NavmeshData navmeshData, Vector3 start, int length, OnPathDelegate callback) {
-            this.navmeshData = navmeshData;
+		protected RandomPath Setup (PathfinderConfig config, Vector3 start, int length, OnPathDelegate callback) {
+            this.config = config;
 			this.callback = callback;
 
 			searchLength = length;
@@ -137,7 +137,7 @@ namespace ETPathfinder.PF {
 
 		protected override void Prepare () {
 			nnConstraint.tags = enabledTags;
-			var startNNInfo  = navmeshData.GetNearestOnWalkableNavmesh(startPoint, nnConstraint);
+			var startNNInfo  = config.GetNearest(startPoint, nnConstraint);
 
 			startPoint = startNNInfo.position;
 			endPoint = startPoint;

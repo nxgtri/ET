@@ -3,13 +3,13 @@ using ETPathfinder.PF;
 
 namespace ETPathfinder
 {
-    public class NavmeshData
+    public class PathfinderConfig
     {
         public static readonly float PositionComparePrecision = 1E-3f;
 
-        NavGraph[] graphs;
+        readonly RecastGraph graph;
 
-        TileHandler walkableNavmeshHandler;
+        readonly TileHandler tileHandler;
 
         static readonly bool fullGetNearestSearch = false;
         static readonly bool prioritizeGraphs = false;
@@ -17,58 +17,25 @@ namespace ETPathfinder
 
         public EuclideanEmbedding euclideanEmbedding;
 
-        public NavmeshData(NavGraph[] navGraphs)
+        public PathfinderConfig(RecastGraph graph)
         {
-            this.graphs = navGraphs;
-            euclideanEmbedding = new EuclideanEmbedding(this);
-            walkableNavmeshHandler = new TileHandler(graphs[0] as RecastGraph);
-            walkableNavmeshHandler.CreateTileTypesFromGraph();
+            this.graph = graph;
+            euclideanEmbedding = new EuclideanEmbedding(new NavGraph[] { graph });
+            tileHandler = new TileHandler(graph);
+            tileHandler.CreateTileTypesFromGraph();
         }
 
-        public NavmeshBase WalkableNavmesh
+        public NNInfo GetNearest(Vector3 position, NNConstraint constraint)
         {
-            get
-            {
-                return graphs[0] as NavmeshBase;
-            }
-                
-        }
+            var nearestNode = graph.GetNearest(position, constraint);
 
-        public NavmeshBase BlindNavmesh
-        {
-            get
-            {
-                return graphs[1] as NavmeshBase;
-            }
-        }
-
-        public NavGraph[] Graphs
-        {
-            get
-            {
-                return graphs;
-            }
-        }
-
-        public NNInfo GetNearestOnWalkableNavmesh(Vector3 position, NNConstraint constraint)
-        {
-            NNInfoInternal nearestNode = new NNInfoInternal();
-            nearestNode = WalkableNavmesh.GetNearest(position, constraint);
-
-            var diff = nearestNode.clampedPosition - position;
-            var lengthSquaredXZ = LengthSquaredXZ(diff);
-            if (lengthSquaredXZ > PositionComparePrecision)
+            if ((nearestNode.clampedPosition - position).sqrMagnitude > PositionComparePrecision)
             {
                 return new NNInfo();
             }
 
             // Convert to NNInfo which doesn't have all the internal fields
             return new NNInfo(nearestNode);
-        }
-
-        float LengthSquaredXZ(Vector3 vector)
-        {
-            return (float)((double)vector.x * (double)vector.x + (double)vector.z * (double)vector.z);
         }
     }
 }

@@ -78,15 +78,15 @@ namespace ETPathfinder.PF {
 		 *
 		 * \returns The constructed path object
 		 */
-		public static ABPath Construct (NavmeshData navmeshData, Vector3 start, Vector3 end, OnPathDelegate callback = null) {
+		public static ABPath Construct (PathfinderConfig config, Vector3 start, Vector3 end, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<ABPath>();
 
-			p.Setup(navmeshData, start, end, callback);
+			p.Setup(config, start, end, callback);
 			return p;
 		}
 
-		protected void Setup (NavmeshData navmeshData, Vector3 start, Vector3 end, OnPathDelegate callbackDelegate) {
-            this.navmeshData = navmeshData;
+		protected void Setup (PathfinderConfig config, Vector3 start, Vector3 end, OnPathDelegate callbackDelegate) {
+            this.config = config;
 			callback = callbackDelegate;
 			UpdateStartEnd(start, end);
 		}
@@ -158,7 +158,7 @@ namespace ETPathfinder.PF {
 
 			//Initialize the NNConstraint
 			nnConstraint.tags = enabledTags;
-			var startNNInfo  = navmeshData.GetNearestOnWalkableNavmesh(startPoint, nnConstraint);
+			var startNNInfo  = config.GetNearest(startPoint, nnConstraint);
 
 			//Tell the NNConstraint which node was found as the start node if it is a PathNNConstraint and not a normal NNConstraint
 			var pathNNConstraint = nnConstraint as PathNNConstraint;
@@ -184,7 +184,7 @@ namespace ETPathfinder.PF {
 			// If it is declared that this path type has an end point
 			// Some path types might want to use most of the ABPath code, but will not have an explicit end point at this stage
 			if (hasEndPoint) {
-				var endNNInfo = navmeshData.GetNearestOnWalkableNavmesh(endPoint, nnConstraint);
+				var endNNInfo = config.GetNearest(endPoint, nnConstraint);
 				endPoint = endNNInfo.position;
 				endNode = endNNInfo.node;
 

@@ -58,11 +58,11 @@ namespace ETPathfinder.PF {
 		uint rval;
 
 		System.Object lockObj = new object ();
-        NavmeshData navmeshData;
+		NavGraph[] graphs;
 
-        public EuclideanEmbedding(NavmeshData navmeshData)
+        public EuclideanEmbedding(NavGraph[] graphs)
         {
-            this.navmeshData = navmeshData;
+            this.graphs = graphs;
         }
 
 		/** Simple linear congruential generator.
@@ -118,8 +118,6 @@ namespace ETPathfinder.PF {
 		void PickNRandomNodes (int count, List<GraphNode> buffer) {
 			int n = 0;
 
-			var graphs = navmeshData.Graphs;
-
 			// Loop through all graphs
 			for (int j = 0; j < graphs.Length; j++) {
 				// Loop through all nodes in the graph
@@ -139,7 +137,6 @@ namespace ETPathfinder.PF {
 		}
 
 		GraphNode PickAnyWalkableNode () {
-			var graphs = navmeshData.Graphs;
 			GraphNode first = null;
 
 			// Find any node in the graphs

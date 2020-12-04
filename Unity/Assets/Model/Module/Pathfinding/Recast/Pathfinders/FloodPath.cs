@@ -76,30 +76,30 @@ namespace ETPathfinder.PF {
 		 */
 		public FloodPath () {}
 
-		public static FloodPath Construct (NavmeshData navmeshData, Vector3 start, OnPathDelegate callback = null) {
+		public static FloodPath Construct (PathfinderConfig config, Vector3 start, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<FloodPath>();
-			p.Setup(navmeshData, start, callback);
+			p.Setup(config, start, callback);
 			return p;
 		}
 
-		public static FloodPath Construct (NavmeshData navmeshData, GraphNode start, OnPathDelegate callback = null) {
+		public static FloodPath Construct (PathfinderConfig config, GraphNode start, OnPathDelegate callback = null) {
 			if (start == null) throw new ArgumentNullException("start");
 
 			var p = PathPool.GetPath<FloodPath>();
-			p.Setup(navmeshData, start, callback);
+			p.Setup(config, start, callback);
 			return p;
 		}
 
-		protected void Setup (NavmeshData navmeshData, Vector3 start, OnPathDelegate callback) {
-			this.navmeshData = navmeshData;
+		protected void Setup (PathfinderConfig config, Vector3 start, OnPathDelegate callback) {
+			this.config = config;
 			this.callback = callback;
 			originalStartPoint = start;
 			startPoint = start;
 			heuristic = Heuristic.None;
 		}
 
-		protected void Setup (NavmeshData navmeshData, GraphNode start, OnPathDelegate callback) {
-			this.navmeshData = navmeshData;
+		protected void Setup (PathfinderConfig config, GraphNode start, OnPathDelegate callback) {
+			this.config = config;
 			this.callback = callback;
 			originalStartPoint = (Vector3)start.position;
 			startNode = start;
@@ -122,7 +122,7 @@ namespace ETPathfinder.PF {
 			if (startNode == null) {
 				//Initialize the NNConstraint
 				nnConstraint.tags = enabledTags;
-				var startNNInfo  = navmeshData.GetNearestOnWalkableNavmesh(originalStartPoint, nnConstraint);
+				var startNNInfo  = config.GetNearest(originalStartPoint, nnConstraint);
 
 				startPoint = startNNInfo.position;
 				startNode = startNNInfo.node;

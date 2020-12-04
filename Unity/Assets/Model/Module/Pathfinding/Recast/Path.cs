@@ -148,7 +148,7 @@ namespace ETPathfinder.PF {
 			}
 		}
 #endif
-        protected NavmeshData navmeshData;
+        protected PathfinderConfig config;
 
 		/** Data for the thread calculating this path */
 		protected PathHandler pathHandler;
@@ -379,14 +379,14 @@ namespace ETPathfinder.PF {
 				// for each case saves an extra jump.
 				// This code is pretty hot
 				if (hTargetNode != null) {
-					h = System.Math.Max(h, navmeshData.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
+					h = System.Math.Max(h, config.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
 				}
 				return h;
 			case Heuristic.Manhattan:
 				Int3 p2 = node.position;
 				h = (uint)((System.Math.Abs(hTarget.x-p2.x) + System.Math.Abs(hTarget.y-p2.y) + System.Math.Abs(hTarget.z-p2.z))*heuristicScale);
 				if (hTargetNode != null) {
-					h = System.Math.Max(h, navmeshData.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
+					h = System.Math.Max(h, config.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
 				}
 				return h;
 			case Heuristic.DiagonalManhattan:
@@ -398,7 +398,7 @@ namespace ETPathfinder.PF {
 				int diag2 = System.Math.Max(p.x, p.z);
 				h = (uint)((((14*diag)/10) + (diag2-diag) + p.y) * heuristicScale);
 				if (hTargetNode != null) {
-					h = System.Math.Max(h, navmeshData.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
+					h = System.Math.Max(h, config.euclideanEmbedding.GetHeuristic(node.NodeIndex, hTargetNode.NodeIndex));
 				}
 				return h;
 			case Heuristic.None: break;

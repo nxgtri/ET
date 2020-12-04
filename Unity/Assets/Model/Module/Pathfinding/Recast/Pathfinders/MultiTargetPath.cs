@@ -89,22 +89,22 @@ namespace ETPathfinder.PF {
 		 */
 		public MultiTargetPath () {}
 
-		public static MultiTargetPath Construct (NavmeshData navmeshData, Vector3[] startPoints, Vector3 target, OnPathDelegate[] callbackDelegates, OnPathDelegate callback = null) {
-			MultiTargetPath p = Construct(navmeshData, target, startPoints, callbackDelegates, callback);
+		public static MultiTargetPath Construct (PathfinderConfig config, Vector3[] startPoints, Vector3 target, OnPathDelegate[] callbackDelegates, OnPathDelegate callback = null) {
+			MultiTargetPath p = Construct(config, target, startPoints, callbackDelegates, callback);
 
 			p.inverted = true;
 			return p;
 		}
 
-		public static MultiTargetPath Construct (NavmeshData navmeshData, Vector3 start, Vector3[] targets, OnPathDelegate[] callbackDelegates, OnPathDelegate callback = null) {
+		public static MultiTargetPath Construct (PathfinderConfig config, Vector3 start, Vector3[] targets, OnPathDelegate[] callbackDelegates, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<MultiTargetPath>();
 
-			p.Setup(navmeshData, start, targets, callbackDelegates, callback);
+			p.Setup(config, start, targets, callbackDelegates, callback);
 			return p;
 		}
 
-		protected void Setup (NavmeshData navmeshData, Vector3 start, Vector3[] targets, OnPathDelegate[] callbackDelegates, OnPathDelegate callback) {
-            this.navmeshData = navmeshData;
+		protected void Setup (PathfinderConfig config, Vector3 start, Vector3[] targets, OnPathDelegate[] callbackDelegates, OnPathDelegate callback) {
+            this.config = config;
 			inverted = false;
 			this.callback = callback;
 			callbacks = callbackDelegates;
@@ -300,7 +300,7 @@ namespace ETPathfinder.PF {
 
 		protected override void Prepare () {
 			nnConstraint.tags = enabledTags;
-			var startNNInfo  = navmeshData.GetNearestOnWalkableNavmesh(startPoint, nnConstraint);
+			var startNNInfo  = config.GetNearest(startPoint, nnConstraint);
 			startNode = startNNInfo.node;
 
 			if (startNode == null) {
@@ -330,7 +330,7 @@ namespace ETPathfinder.PF {
 			bool anyNotNull = false;
 
 			for (int i = 0; i < targetPoints.Length; i++) {
-				var endNNInfo = navmeshData.GetNearestOnWalkableNavmesh(targetPoints[i], nnConstraint);
+				var endNNInfo = config.GetNearest(targetPoints[i], nnConstraint);
 
 				targetNodes[i] = endNNInfo.node;
 

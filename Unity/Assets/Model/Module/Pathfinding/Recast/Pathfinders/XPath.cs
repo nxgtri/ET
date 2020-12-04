@@ -26,10 +26,10 @@ namespace ETPathfinder.PF {
 
 		public XPath () {}
 
-		public new static XPath Construct (NavmeshData navmeshData, Vector3 start, Vector3 end, OnPathDelegate callback = null) {
+		public new static XPath Construct (PathfinderConfig config, Vector3 start, Vector3 end, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<XPath>();
 
-			p.Setup(navmeshData, start, end, callback);
+			p.Setup(config, start, end, callback);
 			p.endingCondition = new ABPathEndingCondition(p);
 			return p;
 		}

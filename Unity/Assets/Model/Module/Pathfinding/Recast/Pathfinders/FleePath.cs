@@ -38,15 +38,15 @@ namespace ETPathfinder.PF {
 		/** Constructs a new FleePath.
 		 * The FleePath will be taken from a pool.
 		 */
-		public static FleePath Construct (NavmeshData navmeshData, Vector3 start, Vector3 avoid, int searchLength, OnPathDelegate callback = null) {
+		public static FleePath Construct (PathfinderConfig config, Vector3 start, Vector3 avoid, int searchLength, OnPathDelegate callback = null) {
 			var p = PathPool.GetPath<FleePath>();
 
-			p.Setup(navmeshData, start, avoid, searchLength, callback);
+			p.Setup(config, start, avoid, searchLength, callback);
 			return p;
 		}
 
-		protected void Setup (NavmeshData navmeshData, Vector3 start, Vector3 avoid, int searchLength, OnPathDelegate callback) {
-			Setup(navmeshData, start, searchLength, callback);
+		protected void Setup (PathfinderConfig config, Vector3 start, Vector3 avoid, int searchLength, OnPathDelegate callback) {
+			Setup(config, start, searchLength, callback);
 			aim = avoid-start;
 			// TODO: Why is this multiplication by 10 here?
 			// Might want to remove it
